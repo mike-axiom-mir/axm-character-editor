@@ -1,0 +1,28 @@
+{
+  "schema": "axm.character.preset/v0.1",
+  "id": "male-a",
+  "label": "Male A",
+  "family": "human-v0",
+  "controls": {
+    "height": 1.04,
+    "build": 1.04,
+    "shoulder_width": 1.08,
+    "hip_width": 0.96,
+    "head_scale": 1,
+    "head_width": 1.02,
+    "jaw_width": 1.08,
+    "chin_size": 1.05,
+    "eye_size": 0.98,
+    "eye_spacing": 1.01,
+    "nose_width": 1.03,
+    "nose_projection": 1.04,
+    "mouth_width": 0.98,
+    "skin": "#b77b62",
+    "eyes": "#4a3426",
+    "hair_color": "#2a201b",
+    "hair": "swept",
+    "top": "simple-shirt",
+    "bottom": "trousers",
+    "shoes": "boots"
+  }
+}

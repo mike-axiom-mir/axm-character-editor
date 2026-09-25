@@ -1,0 +1,29 @@
+{
+  "schema": "axm.character.preset/v0.1",
+  "id": "female-b",
+  "label": "Female B",
+  "family": "human-v0",
+  "controls": {
+    "height": 1.04,
+    "build": 1.06,
+    "shoulder_width": 1.02,
+    "hip_width": 1.08,
+    "torso_length": 1.02,
+    "head_scale": 0.98,
+    "head_width": 1.03,
+    "jaw_width": 1.02,
+    "chin_size": 1.01,
+    "eye_size": 0.98,
+    "eye_spacing": 0.98,
+    "nose_width": 1.02,
+    "nose_projection": 1.03,
+    "mouth_width": 1.04,
+    "skin": "#8e5d46",
+    "eyes": "#2f4b43",
+    "hair_color": "#151312",
+    "hair": "bob",
+    "top": "jacket",
+    "bottom": "trousers",
+    "shoes": "boots"
+  }
+}

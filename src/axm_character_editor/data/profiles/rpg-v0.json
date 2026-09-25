@@ -1,0 +1,32 @@
+{
+  "schema": "axm.character.editor-profile/v0.1",
+  "id": "rpg-v0",
+  "label": "RPG World 1 — starter creator",
+  "family": "human-v0",
+  "truth": "This profile limits which installed controls the player sees. It does not delete capability from the family or rewrite saved characters.",
+  "visible_controls": [
+    "height",
+    "build",
+    "shoulder_width",
+    "hip_width",
+    "torso_length",
+    "arm_length",
+    "leg_length",
+    "head_scale",
+    "head_width",
+    "jaw_width",
+    "chin_size",
+    "eye_size",
+    "eye_spacing",
+    "nose_width",
+    "nose_projection",
+    "mouth_width",
+    "skin",
+    "eyes",
+    "hair_color",
+    "hair",
+    "top",
+    "bottom",
+    "shoes"
+  ]
+}

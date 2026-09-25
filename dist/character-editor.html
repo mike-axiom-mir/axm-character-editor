@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AXM Character Editor</title>
+<style>
+:root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#f4f3ef;background:#111410}
+*{box-sizing:border-box} body{margin:0;min-height:100vh;background:radial-gradient(circle at 50% 10%,#2a3026 0,#171b16 42%,#0d100d 100%);color:#f4f3ef}
+button,input,select{font:inherit}.shell{display:grid;grid-template-columns:230px minmax(360px,1fr) 340px;min-height:100vh}
+.panel{background:rgba(12,15,12,.88);backdrop-filter:blur(18px);border-color:#30372e;border-style:solid}.left{border-width:0 1px 0 0;padding:20px}.right{border-width:0 0 0 1px;padding:18px;overflow:auto;max-height:100vh}
+.brand{font-weight:800;letter-spacing:.08em;font-size:13px}.sub{font-size:11px;color:#9ba596;line-height:1.5;margin-top:6px}.status{margin:18px 0;padding:10px 11px;border:1px solid #66592f;background:#2b2818;color:#e5d184;font-size:11px;line-height:1.4}
+h3{font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:#9ba596;margin:24px 0 10px}.preset{width:100%;text-align:left;margin:5px 0;padding:11px 12px;border:1px solid #343b32;background:#171b16;color:#eeeee8;border-radius:7px;cursor:pointer}.preset:hover,.preset.active{border-color:#91a784;background:#232a20}
+.actions{display:grid;gap:7px;margin-top:18px}.action{padding:10px;border-radius:7px;border:1px solid #3a4337;background:#20261e;color:#f4f3ef;cursor:pointer}.action.primary{background:#d8e1c8;color:#182015;border-color:#d8e1c8;font-weight:700}
+.stage{position:relative;display:grid;place-items:center;min-height:100vh;overflow:hidden}.stage:before{content:"";position:absolute;inset:0;background:linear-gradient(transparent 70%,rgba(0,0,0,.28)),repeating-linear-gradient(90deg,rgba(255,255,255,.018) 0 1px,transparent 1px 80px)}
+.preview-wrap{position:relative;width:min(70vh,560px);aspect-ratio:3/4;display:grid;place-items:center}.tag{position:absolute;top:16px;left:16px;font-size:10px;letter-spacing:.13em;color:#aeb8a8;background:#151a14;border:1px solid #374034;padding:7px 9px}.asset-state{position:absolute;bottom:16px;left:16px;right:16px;font-size:10px;color:#d6c880;text-align:center}
+svg{width:100%;height:100%;filter:drop-shadow(0 30px 40px rgba(0,0,0,.35))}
+.control-group{border-top:1px solid #2d342b;padding-top:12px;margin-top:16px}.control-group:first-of-type{border-top:0;margin-top:0}.control-group h2{font-size:12px;margin:0 0 12px;letter-spacing:.07em}.control{display:grid;grid-template-columns:1fr 104px;align-items:center;gap:12px;margin:10px 0}.control label{font-size:12px;color:#d5d9d0}.number{display:grid;grid-template-columns:1fr 42px;gap:6px;align-items:center}.number output{font-size:10px;color:#9ca795;text-align:right}input[type=range]{width:100%;accent-color:#b9c9a9}input[type=color]{width:100%;height:30px;background:#111;border:1px solid #394036;padding:2px}select{width:100%;background:#171b16;color:#f2f2ec;border:1px solid #394036;border-radius:5px;padding:6px}
+.idrow{display:grid;gap:5px;margin-bottom:14px}.idrow label{font-size:10px;color:#9ba596;text-transform:uppercase;letter-spacing:.12em}.idrow input{background:#151914;border:1px solid #394036;border-radius:6px;color:#f2f2ec;padding:9px}
+.small{font-size:10px;color:#899484;line-height:1.5}.file{display:none}
+@media(max-width:1000px){.shell{grid-template-columns:190px 1fr}.right{grid-column:1/-1;max-height:none;border-width:1px 0 0;padding:20px}.stage{min-height:680px}}
+@media(max-width:700px){.shell{display:block}.left,.right{border:0}.stage{min-height:620px}.preview-wrap{width:min(92vw,500px)}}
+</style>
+</head>
+<body>
+<div class="shell">
+<aside class="panel left">
+  <div class="brand">AXM / CHARACTER EDITOR</div>
+  <div class="sub" id="familyLabel"></div>
+  <div class="status">FOUNDATION BUILD<br>Blueprint/editor state is real. Production mesh + smooth skin + game-rig export is still explicitly HELD.</div>
+  <h3>Starting presets</h3>
+  <div id="presets"></div>
+  <div class="actions">
+    <button class="action primary" id="exportBtn">Export blueprint</button>
+    <button class="action" id="importBtn">Import blueprint</button>
+    <input class="file" type="file" id="fileInput" accept=".json,application/json">
+    <button class="action" id="resetBtn">Reset preset</button>
+  </div>
+  <p class="small">The RPG profile only changes which controls are shown. It does not remove capabilities or rewrite saved characters.</p>
+</aside>
+<main class="stage">
+  <div class="preview-wrap">
+    <div class="tag">SCHEMATIC PREVIEW / NOT FINAL MESH</div>
+    <svg viewBox="0 0 420 620" aria-label="Schematic live character preview">
+      <ellipse cx="210" cy="574" rx="118" ry="17" fill="#090b09" opacity=".42"/>
+      <g id="character">
+        <g id="legs"><rect id="legL" x="153" y="421" width="42" height="120" rx="20" fill="#a96f57"/><rect id="legR" x="225" y="421" width="42" height="120" rx="20" fill="#a96f57"/><ellipse id="shoeL" cx="168" cy="543" rx="38" ry="15" fill="#282927"/><ellipse id="shoeR" cx="252" cy="543" rx="38" ry="15" fill="#282927"/></g>
+        <g id="arms"><rect id="armL" x="102" y="286" width="36" height="164" rx="18" fill="#a96f57" transform="rotate(5 120 286)"/><rect id="armR" x="282" y="286" width="36" height="164" rx="18" fill="#a96f57" transform="rotate(-5 300 286)"/></g>
+        <path id="torso" d="M135 270 Q210 235 285 270 L276 427 Q210 452 144 427 Z" fill="#59675a"/>
+        <ellipse id="neck" cx="210" cy="270" rx="34" ry="24" fill="#a96f57"/>
+        <ellipse id="head" cx="210" cy="172" rx="84" ry="101" fill="#c98f76"/>
+        <g id="hair"><path id="hairShape" d="M128 160 Q128 72 210 64 Q292 72 292 160 Q265 108 210 105 Q155 108 128 160Z" fill="#34221f"/></g>
+        <g id="face">
+          <ellipse id="eyeL" cx="180" cy="164" rx="11" ry="14" fill="#f4f2e8"/><ellipse id="eyeR" cx="240" cy="164" rx="11" ry="14" fill="#f4f2e8"/>
+          <circle id="irisL" cx="180" cy="165" r="6" fill="#5b3828"/><circle id="irisR" cx="240" cy="165" r="6" fill="#5b3828"/>
+          <path id="nose" d="M210 174 L202 206 Q210 211 218 206" fill="none" stroke="#835d4e" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+          <path id="mouth" d="M184 228 Q210 241 236 228" fill="none" stroke="#6e4039" stroke-width="4" stroke-linecap="round"/>
+        </g>
+      </g>
+    </svg>
+    <div class="asset-state">TARGET: same saved character blueprint → future production human builder → verified rigged GLB</div>
+  </div>
+</main>
+<aside class="panel right">
+  <div class="idrow"><label for="charId">Character ID</label><input id="charId" value="player-001"></div>
+  <div id="controls"></div>
+</aside>
+</div>
+<script>
+const DATA={"family":{"schema":"axm.character.family/v0.1","id":"human-v0","label":"Human v0","version":"0.1","status":"EXPERIMENTAL_HUMAN_FIRST_FOUNDATION","build_status":"HOLD_PRODUCTION_MESH_SKIN_RIG_EXPORT_NOT_INTEGRATED","truth":"Controls and presets are editor-ready data. The family does not yet claim a production human mesh or playable game asset.","rig_profiles":[{"id":"axm-humanoid-rig-v0","status":"HOLD_RIG_EXTRACTION_AND_BINDING_REQUIRED"}],"controls":[{"id":"height","label":"Height","group":"Body","type":"number","min":0.85,"max":1.15,"step":0.01,"default":1,"channel":"geometry"},{"id":"build","label":"Build","group":"Body","type":"number","min":0.75,"max":1.25,"step":0.01,"default":1,"channel":"geometry"},{"id":"shoulder_width","label":"Shoulders","group":"Body","type":"number","min":0.8,"max":1.25,"step":0.01,"default":1,"channel":"geometry"},{"id":"hip_width","label":"Hips","group":"Body","type":"number","min":0.8,"max":1.25,"step":0.01,"default":1,"channel":"geometry"},{"id":"torso_length","label":"Torso length","group":"Body","type":"number","min":0.88,"max":1.12,"step":0.01,"default":1,"channel":"geometry"},{"id":"arm_length","label":"Arm length","group":"Body","type":"number","min":0.9,"max":1.1,"step":0.01,"default":1,"channel":"geometry"},{"id":"leg_length","label":"Leg length","group":"Body","type":"number","min":0.9,"max":1.1,"step":0.01,"default":1,"channel":"geometry"},{"id":"head_scale","label":"Head scale","group":"Head","type":"number","min":0.86,"max":1.14,"step":0.01,"default":1,"channel":"geometry"},{"id":"head_width","label":"Head width","group":"Face","type":"number","min":0.85,"max":1.15,"step":0.01,"default":1,"channel":"geometry"},{"id":"head_depth","label":"Head depth","group":"Face","type":"number","min":0.9,"max":1.1,"step":0.01,"default":1,"channel":"geometry"},{"id":"jaw_width","label":"Jaw width","group":"Face","type":"number","min":0.8,"max":1.2,"step":0.01,"default":1,"channel":"geometry"},{"id":"chin_size","label":"Chin","group":"Face","type":"number","min":0.8,"max":1.2,"step":0.01,"default":1,"channel":"geometry"},{"id":"eye_size","label":"Eye size","group":"Face","type":"number","min":0.8,"max":1.2,"step":0.01,"default":1,"channel":"geometry"},{"id":"eye_spacing","label":"Eye spacing","group":"Face","type":"number","min":0.85,"max":1.15,"step":0.01,"default":1,"channel":"geometry"},{"id":"nose_width","label":"Nose width","group":"Face","type":"number","min":0.8,"max":1.2,"step":0.01,"default":1,"channel":"geometry"},{"id":"nose_projection","label":"Nose projection","group":"Face","type":"number","min":0.8,"max":1.2,"step":0.01,"default":1,"channel":"geometry"},{"id":"mouth_width","label":"Mouth width","group":"Face","type":"number","min":0.85,"max":1.15,"step":0.01,"default":1,"channel":"geometry"},{"id":"skin","label":"Skin","group":"Appearance","type":"color","default":"#c98f76","channel":"appearance"},{"id":"eyes","label":"Eye colour","group":"Appearance","type":"color","default":"#5b3828","channel":"appearance"},{"id":"hair_color","label":"Hair colour","group":"Appearance","type":"color","default":"#2e211d","channel":"appearance"},{"id":"hair","label":"Hair","group":"Hair & clothes","type":"choice","choices":["none","short","swept","bob","long"],"default":"short","channel":"equipment"},{"id":"top","label":"Top","group":"Hair & clothes","type":"choice","choices":["simple-shirt","tunic","jacket"],"default":"simple-shirt","channel":"equipment"},{"id":"bottom","label":"Bottom","group":"Hair & clothes","type":"choice","choices":["trousers","shorts","skirt"],"default":"trousers","channel":"equipment"},{"id":"shoes","label":"Shoes","group":"Hair & clothes","type":"choice","choices":["boots","shoes","sandals"],"default":"boots","channel":"equipment"}]},"profile":{"schema":"axm.character.editor-profile/v0.1","id":"rpg-v0","label":"RPG World 1 — starter creator","family":"human-v0","truth":"This profile limits which installed controls the player sees. It does not delete capability from the family or rewrite saved characters.","visible_controls":["height","build","shoulder_width","hip_width","torso_length","arm_length","leg_length","head_scale","head_width","jaw_width","chin_size","eye_size","eye_spacing","nose_width","nose_projection","mouth_width","skin","eyes","hair_color","hair","top","bottom","shoes"]},"presets":[{"schema":"axm.character.preset/v0.1","id":"female-a","label":"Female A","family":"human-v0","controls":{"height":0.98,"build":0.92,"shoulder_width":0.92,"hip_width":1.06,"head_scale":1.01,"head_width":0.98,"jaw_width":0.9,"chin_size":0.94,"eye_size":1.06,"eye_spacing":1.02,"nose_width":0.94,"nose_projection":0.96,"mouth_width":1.03,"skin":"#c98f76","eyes":"#5b3828","hair_color":"#34221f","hair":"long","top":"simple-shirt","bottom":"trousers","shoes":"boots"}},{"schema":"axm.character.preset/v0.1","id":"female-b","label":"Female B","family":"human-v0","controls":{"height":1.04,"build":1.06,"shoulder_width":1.02,"hip_width":1.08,"torso_length":1.02,"head_scale":0.98,"head_width":1.03,"jaw_width":1.02,"chin_size":1.01,"eye_size":0.98,"eye_spacing":0.98,"nose_width":1.02,"nose_projection":1.03,"mouth_width":1.04,"skin":"#8e5d46","eyes":"#2f4b43","hair_color":"#151312","hair":"bob","top":"jacket","bottom":"trousers","shoes":"boots"}},{"schema":"axm.character.preset/v0.1","id":"male-a","label":"Male A","family":"human-v0","controls":{"height":1.04,"build":1.04,"shoulder_width":1.08,"hip_width":0.96,"head_scale":1,"head_width":1.02,"jaw_width":1.08,"chin_size":1.05,"eye_size":0.98,"eye_spacing":1.01,"nose_width":1.03,"nose_projection":1.04,"mouth_width":0.98,"skin":"#b77b62","eyes":"#4a3426","hair_color":"#2a201b","hair":"swept","top":"simple-shirt","bottom":"trousers","shoes":"boots"}},{"schema":"axm.character.preset/v0.1","id":"male-b","label":"Male B","family":"human-v0","controls":{"height":1.08,"build":1.14,"shoulder_width":1.16,"hip_width":1,"torso_length":1.04,"head_scale":0.97,"head_width":1.06,"jaw_width":1.14,"chin_size":1.1,"eye_size":0.94,"eye_spacing":1.04,"nose_width":1.08,"nose_projection":1.09,"mouth_width":1,"skin":"#6f4637","eyes":"#33271f","hair_color":"#111111","hair":"short","top":"jacket","bottom":"trousers","shoes":"boots"}}]};
+const family=DATA.family, profile=DATA.profile, presetRows=DATA.presets;
+const specs=Object.fromEntries(family.controls.map(function(x){return [x.id,x]}));
+let activePreset=presetRows[0] ? presetRows[0].id : null;
+let state={};
+
+function defaults(){const out={};family.controls.forEach(function(s){out[s.id]=s.default});return out}
+function presetById(id){return presetRows.find(function(p){return p.id===id})}
+function usePreset(id){
+  const p=presetById(id); state=defaults();
+  if(p && p.controls){Object.assign(state,p.controls);activePreset=p.id}
+  renderPresetButtons(); renderControls(); updatePreview();
+}
+function renderPresetButtons(){
+  const root=document.getElementById("presets");root.innerHTML="";
+  presetRows.forEach(function(p){
+    const b=document.createElement("button");b.className="preset"+(p.id===activePreset?" active":"");b.textContent=p.label;
+    b.onclick=function(){usePreset(p.id)};root.appendChild(b)
+  })
+}
+function renderControls(){
+  const root=document.getElementById("controls");root.innerHTML="";
+  const allowed=new Set(profile.visible_controls); const groups={};
+  family.controls.filter(function(s){return allowed.has(s.id)}).forEach(function(s){(groups[s.group]||(groups[s.group]=[])).push(s)});
+  Object.keys(groups).forEach(function(group){
+    const box=document.createElement("section");box.className="control-group";
+    const h=document.createElement("h2");h.textContent=group;box.appendChild(h);
+    groups[group].forEach(function(s){
+      const row=document.createElement("div");row.className="control";
+      const lab=document.createElement("label");lab.textContent=s.label;lab.htmlFor="ctl-"+s.id;row.appendChild(lab);
+      if(s.type==="number"){
+        const wrap=document.createElement("div");wrap.className="number";
+        const input=document.createElement("input");input.type="range";input.id="ctl-"+s.id;input.min=s.min;input.max=s.max;input.step=s.step;input.value=state[s.id];
+        const out=document.createElement("output");out.textContent=Number(state[s.id]).toFixed(2);
+        input.oninput=function(){state[s.id]=Number(input.value);out.textContent=Number(input.value).toFixed(2);activePreset=null;renderPresetButtons();updatePreview()};
+        wrap.appendChild(input);wrap.appendChild(out);row.appendChild(wrap)
+      }else if(s.type==="color"){
+        const input=document.createElement("input");input.type="color";input.id="ctl-"+s.id;input.value=state[s.id];
+        input.oninput=function(){state[s.id]=input.value;activePreset=null;renderPresetButtons();updatePreview()};row.appendChild(input)
+      }else if(s.type==="choice"){
+        const sel=document.createElement("select");sel.id="ctl-"+s.id;s.choices.forEach(function(c){const o=document.createElement("option");o.value=c;o.textContent=c.replaceAll("-"," ");sel.appendChild(o)});sel.value=state[s.id];
+        sel.onchange=function(){state[s.id]=sel.value;activePreset=null;renderPresetButtons();updatePreview()};row.appendChild(sel)
+      }
+      box.appendChild(row)
+    });root.appendChild(box)
+  })
+}
+function updatePreview(){
+  const n=function(id){return Number(state[id]||1)};
+  const skin=state.skin||"#c98f76", hair=state.hair_color||"#34221f", eye=state.eyes||"#5b3828";
+  const height=n("height"), build=n("build"), shoulders=n("shoulder_width"), hips=n("hip_width"), hs=n("head_scale"), hw=n("head_width"), eyes=n("eye_size"), spacing=n("eye_spacing"), jaw=n("jaw_width");
+  const head=document.getElementById("head");head.setAttribute("rx",84*hw);head.setAttribute("ry",101*hs);head.setAttribute("fill",skin);
+  document.getElementById("neck").setAttribute("fill",skin);
+  document.getElementById("armL").setAttribute("fill",skin);document.getElementById("armR").setAttribute("fill",skin);
+  document.getElementById("legL").setAttribute("fill",skin);document.getElementById("legR").setAttribute("fill",skin);
+  document.getElementById("hairShape").setAttribute("fill",hair);document.getElementById("hair").style.opacity=state.hair==="none"?"0":"1";
+  document.getElementById("irisL").setAttribute("fill",eye);document.getElementById("irisR").setAttribute("fill",eye);
+  const eyeOffset=30*spacing;["eyeL","irisL"].forEach(function(id){document.getElementById(id).setAttribute("cx",210-eyeOffset)});
+  ["eyeR","irisR"].forEach(function(id){document.getElementById(id).setAttribute("cx",210+eyeOffset)});
+  document.getElementById("eyeL").setAttribute("rx",11*eyes);document.getElementById("eyeL").setAttribute("ry",14*eyes);
+  document.getElementById("eyeR").setAttribute("rx",11*eyes);document.getElementById("eyeR").setAttribute("ry",14*eyes);
+  const shoulderX=72*shoulders, hipX=64*hips*build;
+  document.getElementById("torso").setAttribute("d","M"+(210-shoulderX)+" 270 Q210 235 "+(210+shoulderX)+" 270 L"+(210+hipX)+" 427 Q210 452 "+(210-hipX)+" 427 Z");
+  const char=document.getElementById("character");char.setAttribute("transform","translate(210 570) scale("+build+" "+height+") translate(-210 -570)");
+  const jawShift=(jaw-1)*8;document.getElementById("mouth").setAttribute("transform","translate(0 "+jawShift+")");
+}
+function blueprint(){
+ return {schema:"axm.character.blueprint/v0.1",id:document.getElementById("charId").value.trim()||"character",family:family.id,family_version:family.version,preset:activePreset,editor_profile:profile.id,rig_profile:family.rig_profiles[0].id,controls:Object.assign({},state),authorship:{method:"HUMAN_EDITOR_EXPLICIT_FIELDS",editor:"axm-character-editor"}}
+}
+function exportBlueprint(){
+ const blob=new Blob([JSON.stringify(blueprint(),null,2)+"\n"],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=blueprint().id+".character.json";a.click();setTimeout(function(){URL.revokeObjectURL(a.href)},1000)
+}
+function importBlueprint(file){
+ const reader=new FileReader();reader.onload=function(){
+  try{const b=JSON.parse(reader.result);if(b.schema!=="axm.character.blueprint/v0.1"||b.family!==family.id)throw new Error("unsupported blueprint schema/family");
+  state=defaults();Object.assign(state,b.controls||{});activePreset=b.preset||null;document.getElementById("charId").value=b.id||"character";renderPresetButtons();renderControls();updatePreview()}
+  catch(err){alert("Import failed: "+err.message)}
+ };reader.readAsText(file)
+}
+document.getElementById("familyLabel").textContent=family.label+" · "+profile.label;
+document.getElementById("exportBtn").onclick=exportBlueprint;
+document.getElementById("importBtn").onclick=function(){document.getElementById("fileInput").click()};
+document.getElementById("fileInput").onchange=function(e){if(e.target.files[0])importBlueprint(e.target.files[0])};
+document.getElementById("resetBtn").onclick=function(){usePreset(activePreset||presetRows[0].id)};
+usePreset(activePreset);
+</script>
+</body>
+</html>
