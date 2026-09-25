@@ -50,6 +50,7 @@ build/player-001/
     character.blueprint.json
     character.glb
     source-lock.json
+    equipment-contract.json
     deformation-verification.json
     build-receipt.json
 ~~~
@@ -72,6 +73,23 @@ A separate face geometry proof can also be exported:
 ~~~bash
 axm-character face-proof player.character.json --out face.obj
 ~~~
+
+## Equipment slots and sockets
+
+Every human-v0 GLB now carries a default semantic equipment interface. Garments
+use deformable/hybrid slots; backpacks, weapons, tools and accessories use named
+attachment sockets that are emitted as actual glTF nodes.
+
+~~~bash
+axm-character equipment player.character.json
+~~~
+
+Useful defaults include body/top/bottom/feet/headwear slots plus back.center,
+back.upper, cape.L/R, grip.L/R, item.L/R, weapon.back and left/right hip weapon
+sockets.
+
+See docs/EQUIPMENT_SOCKETS.md. The first game may use only a few of these; the
+larger map is intentionally present as a stable growth surface.
 
 ## Truth boundary
 
