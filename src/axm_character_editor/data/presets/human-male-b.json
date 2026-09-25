@@ -1,0 +1,29 @@
+{
+  "schema": "axm.character.preset/v0.1",
+  "id": "male-b",
+  "label": "Male B",
+  "family": "human-v0",
+  "controls": {
+    "height": 1.08,
+    "build": 1.14,
+    "shoulder_width": 1.16,
+    "hip_width": 1,
+    "torso_length": 1.04,
+    "head_scale": 0.97,
+    "head_width": 1.06,
+    "jaw_width": 1.14,
+    "chin_size": 1.1,
+    "eye_size": 0.94,
+    "eye_spacing": 1.04,
+    "nose_width": 1.08,
+    "nose_projection": 1.09,
+    "mouth_width": 1,
+    "skin": "#6f4637",
+    "eyes": "#33271f",
+    "hair_color": "#111111",
+    "hair": "short",
+    "top": "jacket",
+    "bottom": "trousers",
+    "shoes": "boots"
+  }
+}
