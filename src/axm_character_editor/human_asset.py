@@ -953,6 +953,7 @@ def build_package(
     target: str|Path,
 ) -> dict[str, Any]:
     from .blueprint import validate_blueprint
+    from .game_asset_verify import verify_path as verify_deformation_path
 
     blueprint = validate_blueprint(blueprint)
     target=Path(target)
@@ -966,6 +967,13 @@ def build_package(
             encoding="utf-8",
         )
         receipt=write_glb(blueprint,target/"character.glb")
+        deformation=verify_deformation_path(target/"character.glb")
+        if deformation["status"] != "SOFTWARE_DEFORMATION_PASS":
+            raise HumanAssetError("generated GLB failed independent software deformation verification")
+        (target/"deformation-verification.json").write_text(
+            json.dumps(deformation,indent=2,sort_keys=True)+"\n",
+            encoding="utf-8",
+        )
         source_lock={
             "schema":"axm.character.source-lock/v0.1",
             "family":"human-v0",
@@ -986,11 +994,13 @@ def build_package(
         )
         package_receipt={
             **receipt,
+            "software_deformation_verification":deformation,
             "source_lock":source_lock,
             "outputs":[
                 "character.blueprint.json",
                 "character.glb",
                 "source-lock.json",
+                "deformation-verification.json",
                 "build-receipt.json",
             ],
         }
