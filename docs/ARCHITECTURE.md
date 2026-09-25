@@ -2,18 +2,20 @@
 
 ## Purpose
 
-AXM Character Editor is a standalone character-authoring machine. The first installed family is `human-v0`, but **human is not a core assumption**.
+AXM Character Editor is a standalone character-authoring machine. The first
+installed family is `human-v0`, but **human is not a core assumption**.
 
 The stable direction is:
 
 human / AI / program
 → explicit character blueprint
 → family pack
-→ build adapter
-→ editable source + portable game asset
-→ independent verification
+→ deterministic build adapter
+→ portable game-asset candidate
+→ independent host/game verification
 
-The RPG is consumer #1. MorphTile and later AXM games may consume the same machine without becoming runtime dependencies.
+The RPG is consumer #1. MorphTile and later AXM games may consume the same
+machine without becoming runtime dependencies.
 
 ## Core boundary
 
@@ -33,15 +35,40 @@ A family owns:
 - its controls and bounds;
 - starting presets;
 - compatible rig profile declarations;
-- later: mesh/morph/material/attachment builders and verification rules.
+- geometry/build adapters;
+- material/equipment interpretation;
+- family-specific verification rules.
 
-A game/editor profile owns only **which installed controls are shown**. Hiding a control never deletes it from the family and never silently rewrites an existing character.
+A game/editor profile owns only **which installed controls are shown**. Hiding a
+control never deletes it from the family and never silently rewrites an existing
+character.
+
+## Current human-v0 pipeline
+
+`human-v0` now has a first executable production-shaped path:
+
+explicit Blueprint
+→ bounded body controls
+→ Aura-derived stable face construction
+→ starter body / hair / clothing geometry
+→ shared `axm-humanoid-rig-v0`
+→ normalized skin weights
+→ Idle / Walk / Wave clips
+→ embedded glTF 2.0 GLB
+→ raw-byte structural verifier
+
+The generated file is a **candidate**, not yet an accepted RPG character.
+
+The browser remains a lightweight editor/preview. It exports the same Blueprint
+consumed by the Python builder; it does not maintain a second character format.
 
 ## Character continuity
 
 Existing characters are source data, not disposable render output.
 
-A future schema migration must preserve the old appearance by default. Newly introduced controls receive compatibility defaults until a person intentionally edits them.
+A future schema migration must preserve old appearance by default. Newly
+introduced controls receive compatibility defaults until a person intentionally
+edits them.
 
 No editor upgrade is allowed to silently "improve" an existing character.
 
@@ -50,22 +77,33 @@ No editor upgrade is allowed to silently "improve" an existing character.
 Implemented now:
 
 - family-neutral `axm.character.blueprint/v0.1`;
-- deterministic validation and signatures;
-- `human-v0` control pack;
-- four human starting presets;
+- deterministic validation and channel signatures;
+- `human-v0` control pack and four presets;
 - RPG starter editor profile;
-- offline editor template;
-- import/export of character blueprints;
-- exact donor snapshots from Avatar Machine and UC.
+- offline editor and Blueprint import/export;
+- exact Aura / Avatar Machine / UC lineage;
+- Aura-derived reusable human-face construction;
+- stable face-shell topology across bounded controls;
+- first bounded human body / hair / clothing realization;
+- 18-joint shared humanoid rig;
+- normalized glTF skin weights;
+- Idle / Walk / Wave starter clips;
+- deterministic embedded GLB output;
+- structural GLB re-open/weight/skin/clip verification.
 
 Held now:
 
-- production human topology;
-- morph-target realization;
-- smooth skin binding;
-- generic humanoid rig extraction;
-- clothing deformation/fitting;
-- GLB game-asset export from this repo;
-- target-engine playability.
+- final body topology/retopology acceptance;
+- corrective deformation and facial animation;
+- production UV/texturing;
+- robust clothing fitting across control extremes;
+- detailed hands/feet/hair;
+- independent Blender/host fresh-import deformation review;
+- RPG engine import and shared-animation runtime proof;
+- measured game-runtime performance.
 
-The editor preview is explicitly schematic until those held stages are earned.
+`game_asset_candidate_ready` may therefore be true while
+`game_asset_ready` remains false.
+
+The editor preview remains explicitly schematic; it is an editing surface, not a
+claim that the SVG is the final asset.
