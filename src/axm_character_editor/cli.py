@@ -15,6 +15,7 @@ from .blueprint import (
 from .human_asset import HumanAssetError, build_package, verify_glb_path
 from .game_asset_verify import GameAssetVerificationError, verify_path as verify_deformation_path
 from .human_face import HumanFaceError, face_summary, write_obj as write_face_obj
+from .equipment import EquipmentContractError, compile_human_v0_equipment
 
 
 def _dump(value) -> None:
@@ -66,6 +67,12 @@ def main() -> None:
     )
     deform.add_argument("glb")
 
+    equipment = commands.add_parser(
+        "equipment",
+        help="Show the semantic garment slots and attachment sockets for a character Blueprint",
+    )
+    equipment.add_argument("blueprint")
+
     args = parser.parse_args()
     try:
         if args.command == "catalog":
@@ -95,10 +102,21 @@ def main() -> None:
             _dump(verify_glb_path(Path(args.glb)))
         elif args.command == "verify-deformation":
             _dump(verify_deformation_path(Path(args.glb)))
+        elif args.command == "equipment":
+            blueprint = load_blueprint(args.blueprint)
+            if blueprint["family"] != "human-v0":
+                raise HumanAssetError("equipment currently supports human-v0 only")
+            from .human_asset import body_metrics, skeleton
+            _dump(compile_human_v0_equipment(
+                blueprint["controls"],
+                body_metrics(blueprint["controls"]),
+                joint_names={row["id"] for row in skeleton(blueprint["controls"])},
+            ))
     except (
         BlueprintError,
         HumanFaceError,
         HumanAssetError,
+        EquipmentContractError,
         GameAssetVerificationError,
         FileExistsError,
         json.JSONDecodeError,
