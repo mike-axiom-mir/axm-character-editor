@@ -1,0 +1,40 @@
+name: apply local 3d editor pass
+
+on:
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.head_ref == 'codex/3d-editor-observer-body-pass'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: codex/3d-editor-observer-body-pass
+          fetch-depth: 0
+      - name: Reconstruct patch
+        run: |
+          cat .axm-patch-gz/*.b64 | base64 -d | gzip -d > /tmp/character-editor-pass.patch
+          test "$(wc -c < /tmp/character-editor-pass.patch)" -eq 66442
+          sha256sum /tmp/character-editor-pass.patch
+      - name: Apply and verify patch
+        run: |
+          git apply --check /tmp/character-editor-pass.patch
+          git apply /tmp/character-editor-pass.patch
+          rm -rf .axm-patch-gz .axm-patch
+          rm -f .github/workflows/apply-local-pass.yml
+          python -m pip install -e .
+          python -m unittest discover -s tests -v
+          python tools/build_editor.py --out /tmp/character-editor.html
+          test -s /tmp/character-editor.html
+      - name: Commit exact observed pass
+        run: |
+          git config user.name "AXM observer loop"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git commit -m "Add live 3D editor, visual observer, and body form pass"
+          git push origin HEAD:codex/3d-editor-observer-body-pass
