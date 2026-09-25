@@ -104,3 +104,27 @@ Grow it without changing the Blueprint root:
 New controls are additive. New family packs may be humanoid or completely
 different. The existing AXM bonsai character direction is a useful future
 non-human validation case, but no non-human family is part of this first RPG gate.
+
+## Post-v0.1 stress test — small globe survival sandbox
+
+After the Character Editor earns its first game-ready human gate, use a deliberately
+small survival sandbox on the existing small-globe/world foundation as a consumer
+stress test rather than immediately expanding content breadth.
+
+The sandbox should prove:
+
+- two or more Character Editor humans spawn from retained Blueprints;
+- the same shared animation contract drives them in-world;
+- locally created assets can be added to the world without rewriting characters;
+- equipment/material/appearance changes produce explicit new character revisions;
+- a character can evolve after creation while retaining its original Blueprint,
+  source lock, build receipt and visual observation baseline;
+- world saves reference portable character/asset identities rather than trapping
+  their sources inside one game;
+- before/after observation sheets expose visual drift when an asset evolves;
+- failures can roll back the character or asset revision without rolling back the
+  whole world.
+
+Keep the game small enough that Character Editor, asset creation, import, evolution,
+world-state interaction and observation are the experiment. Content volume is not
+the target of this rung.

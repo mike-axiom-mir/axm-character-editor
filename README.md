@@ -21,13 +21,12 @@ Current editor capabilities:
 - bounded body and face controls;
 - skin, eye and hair colour;
 - starter hair/clothing choices;
-- live schematic preview;
+- live local 3D preview with orbit/zoom, camera presets and Idle/Walk/Wave pose views;
 - Blueprint import/export;
 - RPG-specific editor profile that limits visible controls without deleting
   underlying capability.
 
-**The browser preview is intentionally schematic.** It is not the generated 3D
-asset.
+**The browser preview is a real local 3D editing surface, but it is still a preview renderer.** The Python GLB builder remains the authoritative exported asset until browser/export parity is separately proven.
 
 ## Build the first real 3D candidate
 
@@ -41,6 +40,7 @@ axm-character new player-001 --preset female-a --out player.character.json
 axm-character build player.character.json build/player-001
 axm-character verify-glb build/player-001/character.glb
 axm-character verify-deformation build/player-001/character.glb
+axm-character observe build/player-001/character.glb build/player-001/observations
 ~~~
 
 The package retains:
@@ -51,6 +51,9 @@ build/player-001/
     character.glb
     source-lock.json
     deformation-verification.json
+    observations/
+        observation-sheet.svg
+        visual-observation.json
     build-receipt.json
 ~~~
 
@@ -65,7 +68,9 @@ The current `human-v0` candidate includes:
 - Idle / Walk / Wave starter clips;
 - deterministic binary GLB output;
 - independent standard-library replay of the exported skin and clips, sampling the
-  actual encoded vertices rather than trusting the builder's in-memory geometry.
+  actual encoded vertices rather than trusting the builder's in-memory geometry;
+- a dependency-free five-view visual observation sheet generated from the actual
+  published GLB and retained beside the asset.
 
 A separate face geometry proof can also be exported:
 

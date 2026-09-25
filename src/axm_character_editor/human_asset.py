@@ -372,14 +372,35 @@ def build_parts(controls: dict[str, Any]) -> list[dict[str, Any]]:
     shoes_choice=controls.get("shoes","boots")
 
     core=_loft_y("body-core",[
-        (m.hip_y-m.pelvis_h*.08,m.hip_half*.88,.105*build*m.scale,{"Pelvis":1}),
-        (pelvis_y,m.hip_half,.125*build*m.scale,{"Pelvis":1}),
-        (spine_y,.145*build*m.scale,.105*build*m.scale,{"Pelvis":.30,"Spine":.70}),
-        (chest_y,m.shoulder_half*.78,.125*build*m.scale,{"Spine":.25,"Chest":.75}),
-        (shoulder_y,m.shoulder_half*.90,.120*build*m.scale,{"Chest":1}),
-        (neck_y,.060*m.scale,.055*m.scale,{"Chest":.15,"Neck":.85}),
-    ],material_role="top")
+        (m.hip_y-m.pelvis_h*.10,m.hip_half*.92,.108*build*m.scale,{"Pelvis":1}),
+        (pelvis_y,m.hip_half*1.04,.128*build*m.scale,{"Pelvis":1}),
+        (spine_y-.04*m.scale,.132*build*m.scale,.102*build*m.scale,{"Pelvis":.38,"Spine":.62}),
+        (spine_y+.04*m.scale,.145*build*m.scale,.112*build*m.scale,{"Pelvis":.18,"Spine":.82}),
+        (chest_y,m.shoulder_half*.72,.132*build*m.scale,{"Spine":.25,"Chest":.75}),
+        (shoulder_y-.025*m.scale,m.shoulder_half*.90,.128*build*m.scale,{"Chest":1}),
+        (shoulder_y+.018*m.scale,m.shoulder_half*.78,.110*build*m.scale,{"Chest":1}),
+        (neck_y,.061*m.scale,.056*m.scale,{"Chest":.15,"Neck":.85}),
+    ],material_role="top",segments=48)
     parts=[core]
+    # Blend the torso into the arm roots and hips so the body reads as one figure,
+    # not a torso with tubes attached.
+    for suffix,sign in (("L",-1),("R",1)):
+        parts.append(_ellipsoid(
+            f"shoulder-cap-{suffix.lower()}",
+            (sign*m.shoulder_half*.88,shoulder_y,0),
+            (.074*build*m.scale,.067*m.scale,.072*build*m.scale),
+            {f"UpperArm.{suffix}":.52,"Chest":.48},
+            "top",
+            lon=28,lat=12,
+        ))
+    parts.append(_ellipsoid(
+        "pelvis-bridge",
+        (0,pelvis_y-.01*m.scale,0),
+        (m.hip_half*1.03,m.pelvis_h*.46,.128*build*m.scale),
+        {"Pelvis":1},
+        "bottom",
+        lon=32,lat=12,
+    ))
 
     if top_choice == "tunic":
         parts.append(_loft_y("tunic-lower",[
@@ -418,24 +439,35 @@ def build_parts(controls: dict[str, Any]) -> list[dict[str, Any]]:
         fa=f"Forearm.{suffix}"
         ha=f"Hand.{suffix}"
         parts.append(_tube_x(f"upper-arm-{suffix.lower()}",[
-            (sx,shoulder_y,upper_r,upper_r,{ua:1}),
-            (sign*(m.shoulder_half+m.upper_arm*.78),shoulder_y,upper_r*.88,upper_r*.88,{ua:.75,fa:.25}),
-            (ex,shoulder_y,upper_r*.84,upper_r*.84,{ua:.45,fa:.55}),
-        ],material_role=upper_arm_role))
+            (sx,shoulder_y,upper_r*1.06,upper_r*1.04,{"Chest":.18,ua:.82}),
+            (sign*(m.shoulder_half+m.upper_arm*.35),shoulder_y,upper_r,upper_r*.98,{ua:.94,fa:.06}),
+            (sign*(m.shoulder_half+m.upper_arm*.72),shoulder_y,upper_r*.91,upper_r*.89,{ua:.78,fa:.22}),
+            (ex,shoulder_y,fore_r*1.08,fore_r*1.04,{ua:.48,fa:.52}),
+        ],material_role=upper_arm_role,segments=32))
         parts.append(_tube_x(f"forearm-{suffix.lower()}",[
-            (ex,shoulder_y,fore_r*1.02,fore_r*1.02,{ua:.25,fa:.75}),
-            (sign*(m.shoulder_half+m.upper_arm+m.forearm*.78),shoulder_y,fore_r,fore_r,{fa:.80,ha:.20}),
-            (wx,shoulder_y,fore_r*.82,fore_r*.82,{fa:.35,ha:.65}),
-            (hx,shoulder_y,hand_r*.72,hand_r*.50,{ha:1}),
-        ],material_role="skin"))
+            (ex,shoulder_y,fore_r*1.05,fore_r*1.02,{ua:.24,fa:.76}),
+            (sign*(m.shoulder_half+m.upper_arm+m.forearm*.35),shoulder_y,fore_r*1.01,fore_r*.98,{fa:.92,ha:.08}),
+            (sign*(m.shoulder_half+m.upper_arm+m.forearm*.72),shoulder_y,fore_r*.84,fore_r*.81,{fa:.72,ha:.28}),
+            (wx,shoulder_y,fore_r*.66,fore_r*.61,{fa:.32,ha:.68}),
+        ],material_role="skin",segments=30))
+        wrist=abs(wx)
         parts.append(_ellipsoid(
             f"hand-{suffix.lower()}",
-            (sign*(abs(hx)+m.hand_len*.20),shoulder_y,0),
-            (m.hand_len*.28,.035*m.scale,.055*m.scale),
+            (sign*(wrist+m.hand_len*.28),shoulder_y,.015*m.scale),
+            (m.hand_len*.28,.040*m.scale,.058*m.scale),
             {ha:1},
             "skin",
-            lon=24,
-            lat=10,
+            lon=28,
+            lat=12,
+        ))
+        parts.append(_ellipsoid(
+            f"thumb-{suffix.lower()}",
+            (sign*(wrist+m.hand_len*.13),shoulder_y-.020*m.scale,.050*m.scale),
+            (m.hand_len*.12,.018*m.scale,.022*m.scale),
+            {ha:1},
+            "skin",
+            lon=18,
+            lat=8,
         ))
 
     ankle_y=m.foot_h
@@ -450,22 +482,33 @@ def build_parts(controls: dict[str, Any]) -> list[dict[str, Any]]:
         sh=f"Shin.{suffix}"
         ft=f"Foot.{suffix}"
         parts.append(_tube_y(f"upper-leg-{suffix.lower()}",x,[
-            (hip_y,leg_r,leg_r*.88,{th:1}),
-            (knee_y+m.upper_leg*.20,leg_r*.88,leg_r*.82,{th:.75,sh:.25}),
-            (knee_y,leg_r*.82,leg_r*.78,{th:.45,sh:.55}),
-        ],material_role=upper_leg_role))
+            (hip_y,leg_r*1.05,leg_r*.93,{th:1}),
+            (hip_y-m.upper_leg*.25,leg_r,leg_r*.90,{th:.96,sh:.04}),
+            (knee_y+m.upper_leg*.18,leg_r*.84,leg_r*.81,{th:.78,sh:.22}),
+            (knee_y,leg_r*.76,leg_r*.75,{th:.46,sh:.54}),
+        ],material_role=upper_leg_role,segments=30))
         parts.append(_tube_y(f"lower-leg-{suffix.lower()}",x,[
-            (knee_y,leg_r*.79,leg_r*.76,{th:.22,sh:.78}),
-            (ankle_y+m.lower_leg*.22,leg_r*.72,leg_r*.70,{sh:.82,ft:.18}),
-            (ankle_y,leg_r*.58,leg_r*.62,{sh:.35,ft:.65}),
-        ],material_role=lower_leg_role))
+            (knee_y,leg_r*.76,leg_r*.75,{th:.24,sh:.76}),
+            (knee_y-m.lower_leg*.28,leg_r*.88,leg_r*.82,{sh:.94,ft:.06}),
+            (ankle_y+m.lower_leg*.28,leg_r*.67,leg_r*.70,{sh:.82,ft:.18}),
+            (ankle_y,leg_r*.52,leg_r*.58,{sh:.34,ft:.66}),
+        ],material_role=lower_leg_role,segments=30))
         foot_y=m.foot_h*.52 if shoes_choice!="sandals" else m.foot_h*.38
         foot_ry=m.foot_h*(.52 if shoes_choice=="boots" else .40 if shoes_choice=="shoes" else .25)
         foot_rz=.130*m.scale if shoes_choice=="boots" else .118*m.scale if shoes_choice=="shoes" else .110*m.scale
         parts.append(_ellipsoid(
             f"foot-{suffix.lower()}",
-            (x,foot_y,.065*m.scale),
-            (.072*m.scale,foot_ry,foot_rz),
+            (x,foot_y,.072*m.scale),
+            (.070*m.scale,foot_ry,foot_rz*.76),
+            {ft:1},
+            "shoes",
+            lon=30,
+            lat=12,
+        ))
+        parts.append(_ellipsoid(
+            f"toe-{suffix.lower()}",
+            (x,foot_y*.92,.145*m.scale),
+            (.071*m.scale,foot_ry*.84,foot_rz*.55),
             {ft:1},
             "shoes",
             lon=28,
@@ -496,8 +539,8 @@ def build_parts(controls: dict[str, Any]) -> list[dict[str, Any]]:
         cy=m.head_y+.045*head_scale
         parts.append(_ellipsoid(
             "hair-cap",
-            (0,cy,-.010*head_scale),
-            (hw,hh,hd),
+            (0,cy+.015*head_scale,-.045*head_scale),
+            (hw*.98,hh*.96,hd*.78),
             {"Head":1},
             "hair",
             lon=40,
@@ -553,8 +596,9 @@ def _vertex_normals(
 
 
 def starter_clips() -> list[dict[str, Any]]:
-    # Bind pose stays a T-pose for construction. Gameplay clips explicitly move
-    # the arms out of that authoring pose so Idle is visibly character-like.
+    # The rig bind pose is a T-pose for clean construction. Every gameplay clip
+    # explicitly moves the arms out of that authoring pose so the exported Idle
+    # is visibly character-like rather than a hidden T-pose default.
     left_down = _quat((0,0,1), 78)
     right_down = _quat((0,0,1), -78)
 
@@ -613,6 +657,7 @@ def starter_clips() -> list[dict[str, Any]]:
         ]},
     ]}
     return [idle,walk,wave]
+
 
 class _BufferBuilder:
     def __init__(self):
@@ -1004,6 +1049,8 @@ def build_package(
         )
         receipt=write_glb(blueprint,target/"character.glb")
         deformation=verify_deformation_path(target/"character.glb")
+        from .observation import write_observation_pack
+        visual_observation=write_observation_pack(target/"character.glb", target/"observations")
         if deformation["status"] != "SOFTWARE_DEFORMATION_PASS":
             raise HumanAssetError("generated GLB failed independent software deformation verification")
         (target/"deformation-verification.json").write_text(
@@ -1031,12 +1078,15 @@ def build_package(
         package_receipt={
             **receipt,
             "software_deformation_verification":deformation,
+            "visual_observation":visual_observation,
             "source_lock":source_lock,
             "outputs":[
                 "character.blueprint.json",
                 "character.glb",
                 "source-lock.json",
                 "deformation-verification.json",
+                "observations/observation-sheet.svg",
+                "observations/visual-observation.json",
                 "build-receipt.json",
             ],
         }

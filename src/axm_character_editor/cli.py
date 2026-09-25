@@ -15,6 +15,7 @@ from .blueprint import (
 from .human_asset import HumanAssetError, build_package, verify_glb_path
 from .game_asset_verify import GameAssetVerificationError, verify_path as verify_deformation_path
 from .human_face import HumanFaceError, face_summary, write_obj as write_face_obj
+from .observation import write_observation_pack
 
 
 def _dump(value) -> None:
@@ -66,6 +67,13 @@ def main() -> None:
     )
     deform.add_argument("glb")
 
+    observe = commands.add_parser(
+        "observe",
+        help="Render a dependency-free visual observation sheet from an exported GLB",
+    )
+    observe.add_argument("glb")
+    observe.add_argument("output_dir")
+
     args = parser.parse_args()
     try:
         if args.command == "catalog":
@@ -95,6 +103,8 @@ def main() -> None:
             _dump(verify_glb_path(Path(args.glb)))
         elif args.command == "verify-deformation":
             _dump(verify_deformation_path(Path(args.glb)))
+        elif args.command == "observe":
+            _dump(write_observation_pack(Path(args.glb), Path(args.output_dir)))
     except (
         BlueprintError,
         HumanFaceError,

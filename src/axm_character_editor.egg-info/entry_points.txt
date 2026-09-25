@@ -1,0 +1,2 @@
+[console_scripts]
+axm-character = axm_character_editor.cli:main

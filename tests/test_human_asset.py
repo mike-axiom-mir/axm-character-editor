@@ -86,6 +86,9 @@ class HumanAssetTests(unittest.TestCase):
                 receipt["software_deformation_verification"]["status"],
                 "SOFTWARE_DEFORMATION_PASS",
             )
+            self.assertEqual(receipt["visual_observation"]["schema"], "axm.character.visual-observation/v0.1")
+            self.assertTrue((target / "observations" / "observation-sheet.svg").is_file())
+            self.assertTrue((target / "observations" / "visual-observation.json").is_file())
             self.assertEqual(
                 {p.name for p in target.iterdir()},
                 {
@@ -93,6 +96,7 @@ class HumanAssetTests(unittest.TestCase):
                     "character.glb",
                     "source-lock.json",
                     "deformation-verification.json",
+                    "observations",
                     "build-receipt.json",
                 },
             )

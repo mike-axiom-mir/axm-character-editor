@@ -112,3 +112,24 @@ Held now:
 
 The editor preview remains explicitly schematic; it is an editing surface, not a
 claim that the SVG is the final asset.
+
+## Visual observer loop
+
+Every built human package now retains an observation surface generated from the
+published GLB bytes themselves. The observation renderer reuses the independent
+GLB decoder rather than the in-memory builder state, samples encoded Idle/Walk/Wave
+poses and emits a five-view review sheet plus a digest-bound JSON receipt.
+
+This creates a portable loop:
+
+`Blueprint -> GLB -> independent deformation decode -> visual observation -> review -> repair`
+
+The observation renderer is intentionally lightweight and renderer-neutral. It is
+not evidence that Blender, Godot, Unity, Unreal or the target RPG will shade the
+asset identically. Its job is continuity: a later chat, local tool or game-world
+pipeline can see what the exact exported character looked like when that revision
+was created and compare future revisions without inventing history.
+
+The offline editor now uses a live local 3D viewport for interaction. The Python
+GLB builder remains authoritative export; browser preview parity is an explicit
+engineering target rather than an assumed identity.
