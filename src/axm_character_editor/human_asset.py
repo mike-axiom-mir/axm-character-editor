@@ -820,7 +820,7 @@ def build_glb(blueprint: dict[str, Any]) -> tuple[bytes, dict[str, Any]]:
         "triangles":sum(len(p["triangles"]) for p in parts),
         "clips":[c["name"] for c in starter_clips()],
         "status":"STRUCTURAL_RIGGED_GLB_CANDIDATE",
-        "target_engine_status":"HOLD_RPG_IMPORT_AND_DEFORMATION_REVIEW_NOT_YET_RUN",
+        "target_engine_status":"HOLD_RPG_IMPORT_AND_VISUAL_DEFORMATION_REVIEW_NOT_YET_RUN",
         "truth":(
             "A real glTF 2.0 skin, normalized four-influence weights and starter "
             "clips are encoded. Target-engine import, visual deformation acceptance, "
