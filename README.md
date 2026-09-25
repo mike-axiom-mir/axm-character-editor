@@ -40,6 +40,7 @@ python -m pip install -e .
 axm-character new player-001 --preset female-a --out player.character.json
 axm-character build player.character.json build/player-001
 axm-character verify-glb build/player-001/character.glb
+axm-character verify-deformation build/player-001/character.glb
 ~~~
 
 The package retains:
@@ -49,6 +50,7 @@ build/player-001/
     character.blueprint.json
     character.glb
     source-lock.json
+    deformation-verification.json
     build-receipt.json
 ~~~
 
@@ -61,7 +63,9 @@ The current `human-v0` candidate includes:
 - one shared 18-joint humanoid skeleton;
 - normalized skin weights;
 - Idle / Walk / Wave starter clips;
-- deterministic binary GLB output.
+- deterministic binary GLB output;
+- independent standard-library replay of the exported skin and clips, sampling the
+  actual encoded vertices rather than trusting the builder's in-memory geometry.
 
 A separate face geometry proof can also be exported:
 
@@ -75,9 +79,13 @@ The repository now has a **structurally verified rigged GLB candidate builder**.
 
 That is deliberately different from saying the character is game-ready.
 
+The package now earns `SOFTWARE_DEFORMATION_PASS` only after a second decoder
+re-opens the binary GLB, evaluates its joint hierarchy, inverse bind matrices,
+animation channels and skin weights, and observes real exported-vertex movement.
+
 Still pending:
 
-- independent fresh-import deformation review;
+- independent Blender/engine fresh-import **visual** deformation review;
 - final topology/visual acceptance;
 - robust clothing fitting;
 - corrective shapes/facial animation;

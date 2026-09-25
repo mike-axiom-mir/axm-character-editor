@@ -5,7 +5,7 @@
   "version": "0.1",
   "status": "EXPERIMENTAL_STRUCTURAL_GAME_ASSET_CANDIDATE",
   "build_status": "STRUCTURAL_RIGGED_GLB_CANDIDATE_BUILDER_AVAILABLE",
-  "truth": "The family now builds a real embedded glTF 2.0 candidate with Aura-derived face geometry, a shared 18-joint humanoid skeleton, normalized skin weights and starter Idle/Walk/Wave clips. RPG import, visual deformation acceptance, clothing fit and runtime performance remain unproven.",
+  "truth": "The family builds a real embedded glTF 2.0 candidate with Aura-derived face geometry, a shared 18-joint humanoid skeleton, normalized skin weights and Idle/Walk/Wave clips. An independent standard-library decoder now replays the exported skin and verifies actual vertex deformation and closed endpoints. Blender/target-RPG import, human visual deformation acceptance, clothing fit and runtime performance remain unproven.",
   "rig_profiles": [
     {
       "id": "axm-humanoid-rig-v0",

@@ -73,11 +73,16 @@ class HumanAssetTests(unittest.TestCase):
             receipt = build_package(new_blueprint("player", preset_id="male-b"), target)
             self.assertEqual(receipt["verification"]["status"], "PASS")
             self.assertEqual(
+                receipt["software_deformation_verification"]["status"],
+                "SOFTWARE_DEFORMATION_PASS",
+            )
+            self.assertEqual(
                 {p.name for p in target.iterdir()},
                 {
                     "character.blueprint.json",
                     "character.glb",
                     "source-lock.json",
+                    "deformation-verification.json",
                     "build-receipt.json",
                 },
             )

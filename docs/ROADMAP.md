@@ -47,11 +47,18 @@ boundary.
   - `character.glb`
   - `source-lock.json`
   - `build-receipt.json`;
-- structural raw-byte GLB verification.
+- structural raw-byte GLB verification;
+- independent standard-library skin/animation playback over the published GLB;
+- sampled actual exported-vertex motion, metre scale, ground height and loop closure;
+- retained software deformation receipt.
 
-## Next gate — independent deformation proof
+## Next gate — independent host / visual deformation proof
 
-Use an independent host rather than trusting the generating code:
+The software-side independence rung now exists: a separate decoder reopens the
+published GLB and proves its encoded clips actually deform its encoded vertices.
+
+The remaining acceptance gate must use an independent 3D host rather than trusting
+software playback alone:
 
 - fresh import;
 - shoulder / elbow / hip / knee sampling;
