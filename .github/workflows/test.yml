@@ -10,6 +10,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -17,3 +19,11 @@ jobs:
       - run: python -m unittest discover -s tests -v
       - run: python tools/build_editor.py --out /tmp/character-editor.html
       - run: test -s /tmp/character-editor.html
+      - name: Build exact main source ZIP
+        run: git archive --format=zip --output=/tmp/AXM-Character-Editor-main-0f58d1f.zip origin/main
+      - name: Upload exact main source ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: axm-character-editor-main-0f58d1f
+          path: /tmp/AXM-Character-Editor-main-0f58d1f.zip
+          retention-days: 1
