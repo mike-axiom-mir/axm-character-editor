@@ -18,6 +18,7 @@ import struct
 from typing import Any, Iterable
 
 from .human_face import build_face_parts
+from .equipment import SOCKET_SCHEMA, compile_human_v0_equipment, validate_equipment_contract
 
 GLB_SCHEMA = "axm.character.game-asset/v0.1"
 RIG_ID = "axm-humanoid-rig-v0"
@@ -699,7 +700,10 @@ def build_glb(blueprint: dict[str, Any]) -> tuple[bytes, dict[str, Any]]:
     signatures = signature_bundle(blueprint)
 
     parts=build_parts(controls)
+    metrics=body_metrics(controls)
     joints=skeleton(controls)
+    joint_names={j["id"] for j in joints}
+    equipment=compile_human_v0_equipment(controls,metrics,joint_names=joint_names)
     joint_order={j["id"]:i for i,j in enumerate(joints)}
     buf=_BufferBuilder()
     materials,mat_index=_material_table(controls)
@@ -763,6 +767,24 @@ def build_glb(blueprint: dict[str, Any]) -> tuple[bytes, dict[str, Any]]:
         if j["parent"] is not None:
             nodes[joint_node[j["parent"]]].setdefault("children",[]).append(joint_node[j["id"]])
 
+    socket_node={}
+    for socket in equipment["sockets"]:
+        index=len(nodes)
+        socket_node[socket["id"]]=index
+        nodes.append({
+            "name":"AXM_SOCKET_"+socket["id"],
+            "translation":socket["translation"],
+            "rotation":socket["rotation"],
+            "extras":{
+                "schema":SOCKET_SCHEMA,
+                "id":socket["id"],
+                "parent_joint":socket["parent_joint"],
+                "accepts":socket["accepts"],
+                "purpose":socket["purpose"],
+            },
+        })
+        nodes[joint_node[socket["parent_joint"]]].setdefault("children",[]).append(index)
+
     inv_a=buf.accessor(inverses,"MAT4",5126)
     animations=[]
     for clip in starter_clips():
@@ -815,6 +837,8 @@ def build_glb(blueprint: dict[str, Any]) -> tuple[bytes, dict[str, Any]]:
             "blueprint_id":blueprint.get("id"),
             "family":"human-v0",
             "rig_profile":RIG_ID,
+            "equipment":equipment,
+            "socket_nodes":socket_node,
         },
     }
 
@@ -855,6 +879,9 @@ def build_glb(blueprint: dict[str, Any]) -> tuple[bytes, dict[str, Any]]:
         "vertices":sum(len(p["positions"]) for p in parts),
         "triangles":sum(len(p["triangles"]) for p in parts),
         "clips":[c["name"] for c in starter_clips()],
+        "equipment_slots":len(equipment["slots"]),
+        "attachment_sockets":len(equipment["sockets"]),
+        "socket_ids":[row["id"] for row in equipment["sockets"]],
         "status":"STRUCTURAL_RIGGED_GLB_CANDIDATE",
         "target_engine_status":"HOLD_RPG_IMPORT_AND_VISUAL_DEFORMATION_REVIEW_NOT_YET_RUN",
         "truth":(
@@ -890,6 +917,21 @@ def verify_glb(body: bytes) -> dict[str, Any]:
     skins=doc.get("skins",[])
     animations=doc.get("animations",[])
     meshes=doc.get("meshes",[])
+    equipment=doc.get("extras",{}).get("equipment")
+    try:
+        validate_equipment_contract(equipment)
+        equipment_ok=True
+    except Exception:
+        equipment_ok=False
+    expected_socket_ids={
+        row.get("id") for row in equipment.get("sockets",[])
+    } if isinstance(equipment,dict) else set()
+    observed_socket_ids={
+        node.get("extras",{}).get("id")
+        for node in doc.get("nodes",[])
+        if node.get("extras",{}).get("schema")==SOCKET_SCHEMA
+    }
+
     checks={
         "one_skin":len(skins)==1,
         "humanoid_joint_count":len(skins[0]["joints"])==18 if skins else False,
@@ -899,6 +941,8 @@ def verify_glb(body: bytes) -> dict[str, Any]:
             "skin" in n for n in doc.get("nodes",[]) if "mesh" in n
         ),
         "embedded_binary":len(binary)>0,
+        "equipment_contract":equipment_ok,
+        "equipment_socket_nodes":bool(expected_socket_ids) and observed_socket_ids==expected_socket_ids,
     }
 
     acc=doc["accessors"]
@@ -1003,6 +1047,15 @@ def build_package(
             encoding="utf-8",
         )
         receipt=write_glb(blueprint,target/"character.glb")
+        equipment=compile_human_v0_equipment(
+            blueprint["controls"],
+            body_metrics(blueprint["controls"]),
+            joint_names={row["id"] for row in skeleton(blueprint["controls"])},
+        )
+        (target/"equipment-contract.json").write_text(
+            json.dumps(equipment,indent=2,sort_keys=True)+"\n",
+            encoding="utf-8",
+        )
         deformation=verify_deformation_path(target/"character.glb")
         if deformation["status"] != "SOFTWARE_DEFORMATION_PASS":
             raise HumanAssetError("generated GLB failed independent software deformation verification")
@@ -1031,11 +1084,13 @@ def build_package(
         package_receipt={
             **receipt,
             "software_deformation_verification":deformation,
+            "equipment_contract":equipment,
             "source_lock":source_lock,
             "outputs":[
                 "character.blueprint.json",
                 "character.glb",
                 "source-lock.json",
+                "equipment-contract.json",
                 "deformation-verification.json",
                 "build-receipt.json",
             ],
