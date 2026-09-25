@@ -13,6 +13,7 @@ from .blueprint import (
     write_blueprint,
 )
 from .human_asset import HumanAssetError, build_package, verify_glb_path
+from .game_asset_verify import GameAssetVerificationError, verify_path as verify_deformation_path
 from .human_face import HumanFaceError, face_summary, write_obj as write_face_obj
 
 
