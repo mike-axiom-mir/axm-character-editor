@@ -1,0 +1,22 @@
+{
+  "schema": "axm.character.donor-source-lock/v0.1",
+  "donor": "Aura revision 2",
+  "source": "Mike-supplied Aura-Android.zip",
+  "package_sha256": "61592614d97b26dd768d9d6e37365af192d5fff1f660f4ca99566d1bc9e87c04",
+  "selected_movie_sha256": "78e65019a27b9c830bbc7fc23cc392728987e4d81fcbb31de48f929504ff664d",
+  "earlier_uploaded_movie_sha256": "78e65019a27b9c830bbc7fc23cc392728987e4d81fcbb31de48f929504ff664d",
+  "exact_movie_match": true,
+  "source_files": {
+    "Aura/source/build_aura.py": "8bbd744af128d9adfbb525f4b925e52266182591aa9f98b44e17d981c63c537f",
+    "Aura/source/upgrade_aura.py": "4c33838e3ed7fff0c5a83468ecc03849a23c2603b574397f2b1acd8284cf620a",
+    "Aura/source/render_revision.py": "dec2434fc07638afad246d076af21e4001bd0b0fd56c94a1fd0ed4fa85a19fec",
+    "Aura/source/source/LICENSE": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+  },
+  "shared_helper": {
+    "path": "Aura/source/source/axm_blender_forge.py",
+    "git_blob_sha": "3cd1a19102df018ce4964de46d7e1eb4cabe7ac0",
+    "same_as_uc_pinned_helper": true
+  },
+  "adaptation": "human_face.py parameterizes the Aura revision 2 face profile/local-volume equations and deliberately keeps a stable face-shell topology.",
+  "runtime_dependency": false
+}
