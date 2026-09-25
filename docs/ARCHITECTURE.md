@@ -53,6 +53,7 @@ explicit Blueprint
 → starter body / hair / clothing geometry
 → shared `axm-humanoid-rig-v0`
 → normalized skin weights
+→ semantic garment slots + joint-local attachment sockets
 → Idle / Walk / Wave clips
 → embedded glTF 2.0 GLB
 → raw-byte structural verifier
@@ -89,6 +90,8 @@ Implemented now:
 - first bounded human body / hair / clothing realization;
 - 18-joint shared humanoid rig;
 - normalized glTF skin weights;
+- reusable human-v0 garment/equipment slot contract;
+- named attachment sockets embedded as glTF nodes for back/hip/hand/grip/cape/etc.;
 - Idle / Walk / Wave starter clips;
 - deterministic embedded GLB output;
 - structural GLB re-open/weight/skin/clip verification;

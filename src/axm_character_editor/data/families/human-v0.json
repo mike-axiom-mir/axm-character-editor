@@ -278,5 +278,7 @@
       "default": "boots",
       "channel": "equipment"
     }
-  ]
+  ],
+  "equipment_contract": "axm.character.equipment-contract/v0.1",
+  "default_equipment_policy": "garments use semantic skinned/hybrid slots; rigid/independent assets use named joint-local sockets"
 }

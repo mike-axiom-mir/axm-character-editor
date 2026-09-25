@@ -76,6 +76,16 @@ class HumanAssetTests(unittest.TestCase):
         for node in doc["nodes"]:
             if "mesh" in node:
                 self.assertEqual(node["skin"], 0)
+        equipment = doc["extras"]["equipment"]
+        expected = {row["id"] for row in equipment["sockets"]}
+        observed = {
+            node.get("extras", {}).get("id")
+            for node in doc["nodes"]
+            if node.get("extras", {}).get("schema") == "axm.character.socket/v0.1"
+        }
+        self.assertEqual(observed, expected)
+        self.assertIn("back.center", observed)
+        self.assertIn("grip.R", observed)
 
     def test_package_retains_source_and_refuses_silent_overwrite(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -92,6 +102,7 @@ class HumanAssetTests(unittest.TestCase):
                     "character.blueprint.json",
                     "character.glb",
                     "source-lock.json",
+                    "equipment-contract.json",
                     "deformation-verification.json",
                     "build-receipt.json",
                 },
