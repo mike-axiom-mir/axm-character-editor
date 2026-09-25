@@ -55,6 +55,28 @@ def _quat(axis: tuple[float, float, float], degrees: float) -> list[float]:
     return [axis[0]*s, axis[1]*s, axis[2]*s, math.cos(half)]
 
 
+def _qmul(a: list[float], b: list[float]) -> list[float]:
+    ax, ay, az, aw = a
+    bx, by, bz, bw = b
+    q = [
+        aw*bx + ax*bw + ay*bz - az*by,
+        aw*by - ax*bz + ay*bw + az*bx,
+        aw*bz + ax*by - ay*bx + az*bw,
+        aw*bw - ax*bx - ay*by - az*bz,
+    ]
+    n = math.sqrt(sum(v*v for v in q))
+    if n <= 1e-12:
+        raise HumanAssetError("quaternion composition collapsed")
+    return [v/n for v in q]
+
+
+def _compose(*quaternions: list[float]) -> list[float]:
+    result = [0.0, 0.0, 0.0, 1.0]
+    for q in quaternions:
+        result = _qmul(result, q)
+    return result
+
+
 def _normalize_weights(rows: list[dict[str, float]]) -> list[dict[str, float]]:
     out = []
     for row in rows:
@@ -531,6 +553,11 @@ def _vertex_normals(
 
 
 def starter_clips() -> list[dict[str, Any]]:
+    # Bind pose stays a T-pose for construction. Gameplay clips explicitly move
+    # the arms out of that authoring pose so Idle is visibly character-like.
+    left_down = _quat((0,0,1), 78)
+    right_down = _quat((0,0,1), -78)
+
     idle={"name":"Idle","tracks":[
         {"joint":"Chest","path":"rotation","times":[0,1,2],"values":[
             _quat((1,0,0),0),_quat((1,0,0),1.5),_quat((1,0,0),0)
@@ -538,7 +565,10 @@ def starter_clips() -> list[dict[str, Any]]:
         {"joint":"Head","path":"rotation","times":[0,1,2],"values":[
             _quat((0,1,0),-1),_quat((0,1,0),1),_quat((0,1,0),-1)
         ]},
+        {"joint":"UpperArm.L","path":"rotation","times":[0,1,2],"values":[left_down,left_down,left_down]},
+        {"joint":"UpperArm.R","path":"rotation","times":[0,1,2],"values":[right_down,right_down,right_down]},
     ]}
+
     walk={"name":"Walk","tracks":[]}
     times=[0,.5,1.0]
 
@@ -550,33 +580,39 @@ def starter_clips() -> list[dict[str, Any]]:
             "values":[_quat(axis,degrees),_quat(axis,-degrees),_quat(axis,degrees)],
         }
 
+    def arm_track(joint, down_degrees, swing_degrees):
+        values=[]
+        for swing in (swing_degrees,-swing_degrees,swing_degrees):
+            values.append(_compose(_quat((0,0,1),down_degrees), _quat((0,1,0),swing)))
+        return {"joint":joint,"path":"rotation","times":times,"values":values}
+
     walk["tracks"] += [
         track("Thigh.L",(1,0,0),24),
         track("Thigh.R",(1,0,0),-24),
         track("Shin.L",(1,0,0),-14),
         track("Shin.R",(1,0,0),14),
-        track("UpperArm.L",(1,0,0),-18),
-        track("UpperArm.R",(1,0,0),18),
+        arm_track("UpperArm.L",78,16),
+        arm_track("UpperArm.R",-78,16),
     ]
+
+    right_wave = _compose(_quat((0,0,1),-28), _quat((0,1,0),-12))
     wave={"name":"Wave","tracks":[
+        {"joint":"UpperArm.L","path":"rotation","times":[0,.35,.8,1.25,1.6],"values":[
+            left_down,left_down,left_down,left_down,left_down
+        ]},
         {"joint":"UpperArm.R","path":"rotation","times":[0,.35,.8,1.25,1.6],"values":[
-            _quat((0,0,1),0),
-            _quat((0,0,1),55),
-            _quat((0,0,1),55),
-            _quat((0,0,1),55),
-            _quat((0,0,1),0),
+            right_down,right_wave,right_wave,right_wave,right_down
         ]},
         {"joint":"Forearm.R","path":"rotation","times":[0,.35,.65,.95,1.25,1.6],"values":[
-            _quat((1,0,0),0),
-            _quat((1,0,0),-70),
-            _quat((0,1,0),-18),
-            _quat((0,1,0),18),
-            _quat((1,0,0),-70),
-            _quat((1,0,0),0),
+            _quat((0,1,0),0),
+            _quat((0,1,0),-58),
+            _quat((0,1,0),-35),
+            _quat((0,1,0),-70),
+            _quat((0,1,0),-58),
+            _quat((0,1,0),0),
         ]},
     ]}
     return [idle,walk,wave]
-
 
 class _BufferBuilder:
     def __init__(self):
