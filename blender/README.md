@@ -1,21 +1,33 @@
-# Blender production lane — currently held
+# Blender / host verification lane
 
-This directory is intentionally not populated with a fake new human builder.
+Character Editor no longer depends on Blender to create its first structural
+`human-v0` game-asset candidate.
 
-The repository retains exact donor snapshots in `donors/`. The next production pass should adapt, not import:
+The core Python builder can now emit an embedded glTF 2.0/GLB with:
 
-1. Avatar Machine's explicit Blueprint/scene-plan pattern.
-2. UC's smooth-skin, motion/export and fresh-import verifier patterns.
-3. A stable human base topology and morph-target source.
+- Aura-derived face geometry;
+- bounded human body geometry;
+- one shared 18-joint humanoid skeleton;
+- normalized skin weights;
+- Idle / Walk / Wave starter clips.
 
-The first accepted adapter must emit at minimum:
+That is structural evidence, not final game acceptance.
 
-- editable `.blend`;
-- rigged `.glb`;
-- character manifest;
-- source/morph state;
-- build receipt;
-- fresh-import verification receipt.
+## Why this directory still matters
 
-Until that exists and passes, `human-v0.build_status` remains
-`HOLD_PRODUCTION_MESH_SKIN_RIG_EXPORT_NOT_INTEGRATED`.
+Blender remains a useful **independent host** for the next gate:
+
+1. fresh-import the generated GLB;
+2. inspect shoulder/hip/knee/elbow deformation;
+3. sample all starter clips;
+4. inspect ground contact and mesh intersections;
+5. compare several preset/proportion extremes;
+6. export/reimport without relying on the generating code;
+7. retain exact receipts and images/video for failures and repairs.
+
+The retained UC donor verifier under `donors/uc/` is a useful starting point,
+but it is character-specific and must be adapted rather than silently called as
+if it already validates this new human body.
+
+Until that host pass and the RPG import pass succeed,
+`game_asset_ready` stays false even when the structural GLB verifier passes.
