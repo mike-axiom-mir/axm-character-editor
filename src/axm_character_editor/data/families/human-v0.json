@@ -1,0 +1,282 @@
+{
+  "schema": "axm.character.family/v0.1",
+  "id": "human-v0",
+  "label": "Human v0",
+  "version": "0.1",
+  "status": "EXPERIMENTAL_HUMAN_FIRST_FOUNDATION",
+  "build_status": "HOLD_PRODUCTION_MESH_SKIN_RIG_EXPORT_NOT_INTEGRATED",
+  "truth": "Controls and presets are editor-ready data. The family does not yet claim a production human mesh or playable game asset.",
+  "rig_profiles": [
+    {
+      "id": "axm-humanoid-rig-v0",
+      "status": "HOLD_RIG_EXTRACTION_AND_BINDING_REQUIRED"
+    }
+  ],
+  "controls": [
+    {
+      "id": "height",
+      "label": "Height",
+      "group": "Body",
+      "type": "number",
+      "min": 0.85,
+      "max": 1.15,
+      "step": 0.01,
+      "default": 1,
+      "channel": "geometry"
+    },
+    {
+      "id": "build",
+      "label": "Build",
+      "group": "Body",
+      "type": "number",
+      "min": 0.75,
+      "max": 1.25,
+      "step": 0.01,
+      "default": 1,
+      "channel": "geometry"
+    },
+    {
+      "id": "shoulder_width",
+      "label": "Shoulders",
+      "group": "Body",
+      "type": "number",
+      "min": 0.8,
+      "max": 1.25,
+      "step": 0.01,
+      "default": 1,
+      "channel": "geometry"
+    },
+    {
+      "id": "hip_width",
+      "label": "Hips",
+      "group": "Body",
+      "type": "number",
+      "min": 0.8,
+      "max": 1.25,
+      "step": 0.01,
+      "default": 1,
+      "channel": "geometry"
+    },
+    {
+      "id": "torso_length",
+      "label": "Torso length",
+      "group": "Body",
+      "type": "number",
+      "min": 0.88,
+      "max": 1.12,
+      "step": 0.01,
+      "default": 1,
+      "channel": "geometry"
+    },
+    {
+      "id": "arm_length",
+      "label": "Arm length",
+      "group": "Body",
+      "type": "number",
+      "min": 0.9,
+      "max": 1.1,
+      "step": 0.01,
+      "default": 1,
+      "channel": "geometry"
+    },
+    {
+      "id": "leg_length",
+      "label": "Leg length",
+      "group": "Body",
+      "type": "number",
+      "min": 0.9,
+      "max": 1.1,
+      "step": 0.01,
+      "default": 1,
+      "channel": "geometry"
+    },
+    {
+      "id": "head_scale",
+      "label": "Head scale",
+      "group": "Head",
+      "type": "number",
+      "min": 0.86,
+      "max": 1.14,
+      "step": 0.01,
+      "default": 1,
+      "channel": "geometry"
+    },
+    {
+      "id": "head_width",
+      "label": "Head width",
+      "group": "Face",
+      "type": "number",
+      "min": 0.85,
+      "max": 1.15,
+      "step": 0.01,
+      "default": 1,
+      "channel": "geometry"
+    },
+    {
+      "id": "head_depth",
+      "label": "Head depth",
+      "group": "Face",
+      "type": "number",
+      "min": 0.9,
+      "max": 1.1,
+      "step": 0.01,
+      "default": 1,
+      "channel": "geometry"
+    },
+    {
+      "id": "jaw_width",
+      "label": "Jaw width",
+      "group": "Face",
+      "type": "number",
+      "min": 0.8,
+      "max": 1.2,
+      "step": 0.01,
+      "default": 1,
+      "channel": "geometry"
+    },
+    {
+      "id": "chin_size",
+      "label": "Chin",
+      "group": "Face",
+      "type": "number",
+      "min": 0.8,
+      "max": 1.2,
+      "step": 0.01,
+      "default": 1,
+      "channel": "geometry"
+    },
+    {
+      "id": "eye_size",
+      "label": "Eye size",
+      "group": "Face",
+      "type": "number",
+      "min": 0.8,
+      "max": 1.2,
+      "step": 0.01,
+      "default": 1,
+      "channel": "geometry"
+    },
+    {
+      "id": "eye_spacing",
+      "label": "Eye spacing",
+      "group": "Face",
+      "type": "number",
+      "min": 0.85,
+      "max": 1.15,
+      "step": 0.01,
+      "default": 1,
+      "channel": "geometry"
+    },
+    {
+      "id": "nose_width",
+      "label": "Nose width",
+      "group": "Face",
+      "type": "number",
+      "min": 0.8,
+      "max": 1.2,
+      "step": 0.01,
+      "default": 1,
+      "channel": "geometry"
+    },
+    {
+      "id": "nose_projection",
+      "label": "Nose projection",
+      "group": "Face",
+      "type": "number",
+      "min": 0.8,
+      "max": 1.2,
+      "step": 0.01,
+      "default": 1,
+      "channel": "geometry"
+    },
+    {
+      "id": "mouth_width",
+      "label": "Mouth width",
+      "group": "Face",
+      "type": "number",
+      "min": 0.85,
+      "max": 1.15,
+      "step": 0.01,
+      "default": 1,
+      "channel": "geometry"
+    },
+    {
+      "id": "skin",
+      "label": "Skin",
+      "group": "Appearance",
+      "type": "color",
+      "default": "#c98f76",
+      "channel": "appearance"
+    },
+    {
+      "id": "eyes",
+      "label": "Eye colour",
+      "group": "Appearance",
+      "type": "color",
+      "default": "#5b3828",
+      "channel": "appearance"
+    },
+    {
+      "id": "hair_color",
+      "label": "Hair colour",
+      "group": "Appearance",
+      "type": "color",
+      "default": "#2e211d",
+      "channel": "appearance"
+    },
+    {
+      "id": "hair",
+      "label": "Hair",
+      "group": "Hair & clothes",
+      "type": "choice",
+      "choices": [
+        "none",
+        "short",
+        "swept",
+        "bob",
+        "long"
+      ],
+      "default": "short",
+      "channel": "equipment"
+    },
+    {
+      "id": "top",
+      "label": "Top",
+      "group": "Hair & clothes",
+      "type": "choice",
+      "choices": [
+        "simple-shirt",
+        "tunic",
+        "jacket"
+      ],
+      "default": "simple-shirt",
+      "channel": "equipment"
+    },
+    {
+      "id": "bottom",
+      "label": "Bottom",
+      "group": "Hair & clothes",
+      "type": "choice",
+      "choices": [
+        "trousers",
+        "shorts",
+        "skirt"
+      ],
+      "default": "trousers",
+      "channel": "equipment"
+    },
+    {
+      "id": "shoes",
+      "label": "Shoes",
+      "group": "Hair & clothes",
+      "type": "choice",
+      "choices": [
+        "boots",
+        "shoes",
+        "sandals"
+      ],
+      "default": "boots",
+      "channel": "equipment"
+    }
+  ]
+}
