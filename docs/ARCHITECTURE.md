@@ -56,6 +56,8 @@ explicit Blueprint
 → Idle / Walk / Wave clips
 → embedded glTF 2.0 GLB
 → raw-byte structural verifier
+→ independent skin/animation decoder
+→ sampled exported-vertex deformation proof
 
 The generated file is a **candidate**, not yet an accepted RPG character.
 
@@ -89,7 +91,10 @@ Implemented now:
 - normalized glTF skin weights;
 - Idle / Walk / Wave starter clips;
 - deterministic embedded GLB output;
-- structural GLB re-open/weight/skin/clip verification.
+- structural GLB re-open/weight/skin/clip verification;
+- independent software evaluation of the exported joint hierarchy, inverse bind
+  matrices, clips and actual deformed vertices;
+- retained `deformation-verification.json` in each built character package.
 
 Held now:
 
@@ -98,7 +103,7 @@ Held now:
 - production UV/texturing;
 - robust clothing fitting across control extremes;
 - detailed hands/feet/hair;
-- independent Blender/host fresh-import deformation review;
+- independent Blender/host fresh-import **visual** deformation review;
 - RPG engine import and shared-animation runtime proof;
 - measured game-runtime performance.
 
