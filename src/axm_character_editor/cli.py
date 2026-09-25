@@ -55,9 +55,15 @@ def main() -> None:
 
     verify = commands.add_parser(
         "verify-glb",
-        help="Independently re-open the generated GLB and verify its structural skin/clip contract",
+        help="Re-open the generated GLB and verify its structural skin/clip contract",
     )
     verify.add_argument("glb")
+
+    deform = commands.add_parser(
+        "verify-deformation",
+        help="Independently decode the GLB, play its skin/clips and sample actual exported vertices",
+    )
+    deform.add_argument("glb")
 
     args = parser.parse_args()
     try:
@@ -86,7 +92,16 @@ def main() -> None:
             _dump(build_package(load_blueprint(args.blueprint), Path(args.output_dir)))
         elif args.command == "verify-glb":
             _dump(verify_glb_path(Path(args.glb)))
-    except (BlueprintError, HumanFaceError, HumanAssetError, FileExistsError, json.JSONDecodeError) as exc:
+        elif args.command == "verify-deformation":
+            _dump(verify_deformation_path(Path(args.glb)))
+    except (
+        BlueprintError,
+        HumanFaceError,
+        HumanAssetError,
+        GameAssetVerificationError,
+        FileExistsError,
+        json.JSONDecodeError,
+    ) as exc:
         parser.error(str(exc))
 
 
