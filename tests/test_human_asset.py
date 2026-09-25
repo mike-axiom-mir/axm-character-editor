@@ -26,6 +26,16 @@ class HumanAssetTests(unittest.TestCase):
             self.assertGreater(receipt["triangles"], 25000)
             self.assertLess(check["max_weight_sum_error"], 1e-5)
 
+    def test_idle_clip_leaves_authoring_t_pose(self):
+        from axm_character_editor.human_asset import starter_clips
+        idle = next(clip for clip in starter_clips() if clip["name"] == "Idle")
+        tracks = {row["joint"]: row for row in idle["tracks"]}
+        identity = [0.0, 0.0, 0.0, 1.0]
+        self.assertIn("UpperArm.L", tracks)
+        self.assertIn("UpperArm.R", tracks)
+        self.assertNotEqual(tracks["UpperArm.L"]["values"][0], identity)
+        self.assertNotEqual(tracks["UpperArm.R"]["values"][0], identity)
+
     def test_build_is_byte_deterministic(self):
         blueprint = new_blueprint("same", preset_id="female-a")
         a, ar = build_glb(blueprint)
