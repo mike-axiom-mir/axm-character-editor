@@ -12,6 +12,8 @@ from .blueprint import (
     new_blueprint,
     write_blueprint,
 )
+from .human_asset import HumanAssetError, build_package, verify_glb_path
+from .human_face import HumanFaceError, face_summary, write_obj as write_face_obj
 
 
 def _dump(value) -> None:
@@ -37,6 +39,26 @@ def main() -> None:
     receipt = commands.add_parser("receipt", help="Show signatures and current build truth")
     receipt.add_argument("blueprint")
 
+    face = commands.add_parser(
+        "face-proof",
+        help="Write the Aura-derived human-v0 face geometry as an OBJ proof",
+    )
+    face.add_argument("blueprint")
+    face.add_argument("--out", required=True)
+
+    build = commands.add_parser(
+        "build",
+        help="Build a structural rigged GLB candidate package from a character blueprint",
+    )
+    build.add_argument("blueprint")
+    build.add_argument("output_dir")
+
+    verify = commands.add_parser(
+        "verify-glb",
+        help="Independently re-open the generated GLB and verify its structural skin/clip contract",
+    )
+    verify.add_argument("glb")
+
     args = parser.parse_args()
     try:
         if args.command == "catalog":
@@ -54,7 +76,17 @@ def main() -> None:
             _dump(load_blueprint(args.blueprint))
         elif args.command == "receipt":
             _dump(build_receipt(load_blueprint(args.blueprint)))
-    except BlueprintError as exc:
+        elif args.command == "face-proof":
+            blueprint = load_blueprint(args.blueprint)
+            if blueprint["family"] != "human-v0":
+                raise HumanFaceError("face-proof currently supports human-v0 only")
+            path = write_face_obj(blueprint["controls"], Path(args.out))
+            _dump({"path": str(path), **face_summary(blueprint["controls"])})
+        elif args.command == "build":
+            _dump(build_package(load_blueprint(args.blueprint), Path(args.output_dir)))
+        elif args.command == "verify-glb":
+            _dump(verify_glb_path(Path(args.glb)))
+    except (BlueprintError, HumanFaceError, HumanAssetError, FileExistsError, json.JSONDecodeError) as exc:
         parser.error(str(exc))
 
 

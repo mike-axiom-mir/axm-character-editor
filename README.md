@@ -1,12 +1,15 @@
 # AXM Character Editor
 
-Standalone, family-neutral character authoring foundation for AXM games and tools.
+Standalone, family-neutral character authoring for AXM games and tools.
 
-The first installed family is **`human-v0`** because the first RPG needs a usable human character creator now. Human is not a permanent core assumption: later character families may expose completely different controls, rigs and builders while reusing the same Blueprint/editor/versioning machinery.
+The first installed family is **`human-v0`** because the first RPG needs a usable
+human character creator now. Human is not a permanent core assumption: later
+families may expose completely different controls, rigs and builders while
+reusing the same Blueprint/editor/versioning machinery.
 
 ## Open the editor
 
-For the current foundation build, open:
+Open:
 
 `dist/character-editor.html`
 
@@ -14,35 +17,116 @@ It is one offline HTML file. No account, cloud service, CDN or AI is required.
 
 Current editor capabilities:
 
-- four starting presets: Female A / B and Male A / B;
-- bounded body and face sliders;
+- Female A / B and Male A / B starting presets;
+- bounded body and face controls;
 - skin, eye and hair colour;
 - starter hair/clothing choices;
 - live schematic preview;
 - Blueprint import/export;
-- RPG-specific editor profile that limits visible controls without deleting underlying capability.
+- RPG-specific editor profile that limits visible controls without deleting
+  underlying capability.
 
-**Truth boundary:** the editor and Blueprint state are real, but the current preview is schematic. This repository does **not yet claim a production human mesh, smooth skin, verified humanoid rig, or playable GLB export.**
+**The browser preview is intentionally schematic.** It is not the generated 3D
+asset.
 
-## Blueprint core
+## Build the first real 3D candidate
 
-The shared contract is:
-
-`axm.character.blueprint/v0.1`
-
-A human editor, program or AI writes the same explicit fields. The core validates them deterministically and maintains separate signatures for geometry, appearance and equipment state.
-
-Example:
+The same exported Blueprint can now be compiled locally into a real embedded
+glTF 2.0/GLB candidate.
 
 ~~~bash
 python -m pip install -e .
-axm-character catalog
+
 axm-character new player-001 --preset female-a --out player.character.json
+axm-character build player.character.json build/player-001
+axm-character verify-glb build/player-001/character.glb
+~~~
+
+The package retains:
+
+~~~text
+build/player-001/
+    character.blueprint.json
+    character.glb
+    source-lock.json
+    build-receipt.json
+~~~
+
+The current `human-v0` candidate includes:
+
+- Aura-revision-2-derived facial geometry;
+- bounded body geometry;
+- real slider-driven geometry variation;
+- small hair/clothing variants;
+- one shared 18-joint humanoid skeleton;
+- normalized skin weights;
+- Idle / Walk / Wave starter clips;
+- deterministic binary GLB output.
+
+A separate face geometry proof can also be exported:
+
+~~~bash
+axm-character face-proof player.character.json --out face.obj
+~~~
+
+## Truth boundary
+
+The repository now has a **structurally verified rigged GLB candidate builder**.
+
+That is deliberately different from saying the character is game-ready.
+
+Still pending:
+
+- independent fresh-import deformation review;
+- final topology/visual acceptance;
+- robust clothing fitting;
+- corrective shapes/facial animation;
+- production UV/texturing;
+- target RPG import;
+- shared game-animation runtime proof;
+- measured runtime performance.
+
+For that reason:
+
+- `game_asset_candidate_ready = true`
+- `game_asset_ready = false`
+
+until the remaining gates are actually demonstrated.
+
+## Blueprint core
+
+The shared source contract is:
+
+`axm.character.blueprint/v0.1`
+
+A human editor, program or AI writes the same explicit fields. The core validates
+them deterministically and maintains separate signatures for geometry, appearance
+and equipment state.
+
+~~~bash
+axm-character catalog
 axm-character validate player.character.json
 axm-character receipt player.character.json
 ~~~
 
-The receipt intentionally reports the production asset build as **HOLD** until the Blender/game-asset lane is actually integrated and verified.
+The Blueprint remains the durable character identity. Later editor versions may
+expose more controls without silently rewriting an older character.
+
+## Aura source recovery
+
+Mike supplied the original Aura package used for the earlier human-like face
+video. The packaged movie is byte-identical to the earlier uploaded movie, so
+the adaptation is grounded in the actual construction source rather than a
+visual reconstruction.
+
+See:
+
+- `docs/AURA_FACE_EXTRACTION.md`
+- `docs/DONOR_PROVENANCE.md`
+- `donors/aura/SOURCE_LOCK.json`
+
+Aura supplies the selected face-construction ancestry. Its android body,
+one-off hierarchy and authored scene are not the Character Editor human body.
 
 ## Rebuild the one-file editor
 
@@ -50,31 +134,18 @@ The receipt intentionally reports the production asset build as **HOLD** until t
 python tools/build_editor.py
 ~~~
 
-This regenerates `dist/character-editor.html` from the installed `human-v0` family, presets and RPG editor profile.
+This regenerates `dist/character-editor.html` from the installed
+`human-v0` family, presets and RPG profile.
 
-## Direction
+## Acceptance direction
 
-The first useful v0.1 finish line is:
+The next finish line is:
 
-**create a human in the editor → save/reopen the exact Blueprint → build a smooth-skinned rigged asset → fresh-import verify it → use two distinct generated characters in the first RPG with the same animation system.**
+**editor → exact Blueprint → rigged GLB candidate → independent fresh-import
+deformation proof → two different generated humans running through the same RPG
+animation system.**
 
-The editor may grow inside a shipped game over time. Old characters remain unchanged unless their user deliberately edits them; new controls must receive compatibility defaults rather than silently rewriting older characters.
-
-See:
-
-- `docs/ARCHITECTURE.md`
-- `docs/ROADMAP.md`
-- `docs/DONOR_PROVENANCE.md`
-- `blender/README.md`
-
-## Recovered AXM donors
-
-Exact source snapshots are retained under `donors/` from:
-
-- **AXM Avatar Machine** — deterministic Blueprint/compiler/builder work;
-- **AXM Universal Creation** — smooth-skin/motion/export and fresh-import verification work.
-
-They are pinned by repository commit and source blob in `docs/DONOR_PROVENANCE.md`. Donor directories are evidence/reference, **not hidden runtime dependencies**.
+After that, quality grows without replacing the character format.
 
 ## Test
 
@@ -84,10 +155,13 @@ python -m unittest discover -s tests -v
 python tools/build_editor.py
 ~~~
 
-GitHub CI runs the same core tests and editor build without uploading workflow artifacts.
+GitHub CI runs the core tests and editor build without uploading workflow
+artifacts.
 
 ## Licensing
 
-Machine/workshop code: **PolyForm Noncommercial 1.0.0** plus `CREATOR_OUTPUT_PERMISSION.md`.
+Machine/workshop code: **PolyForm Noncommercial 1.0.0** plus
+`CREATOR_OUTPUT_PERMISSION.md`.
 
-Creator Output can be used commercially under the permission terms. Third-party or future imported character packs keep their own rights and provenance.
+Creator Output can be used commercially under the permission terms. Third-party
+or future imported packs keep their own rights and provenance.

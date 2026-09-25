@@ -308,6 +308,10 @@ def build_receipt(value: Any) -> dict[str, Any]:
     blueprint = validate_blueprint(value)
     family = load_family(blueprint["family"])
     rig = next(row for row in family["rig_profiles"] if row["id"] == blueprint["rig_profile"])
+    candidate_ready = (
+        blueprint["family"] == "human-v0"
+        and family["build_status"] == "STRUCTURAL_RIGGED_GLB_CANDIDATE_BUILDER_AVAILABLE"
+    )
     return {
         "schema": "axm.character.blueprint-receipt/v0.1",
         "id": blueprint["id"],
@@ -316,11 +320,13 @@ def build_receipt(value: Any) -> dict[str, Any]:
         "blueprint_status": "VALIDATED",
         "rig_status": rig["status"],
         "asset_build_status": family["build_status"],
+        "game_asset_candidate_ready": candidate_ready,
         "game_asset_ready": False,
         "truth": (
-            "The blueprint and editor state are deterministic and validated. "
-            "A production mesh/skin/rig export host is not yet integrated in this repository, "
-            "so this receipt does not claim a playable game asset."
+            "The blueprint/editor state is deterministic and validated. "
+            "human-v0 can now build a structurally verified rigged GLB candidate, "
+            "but target-RPG import, visual deformation acceptance, clothing fit and "
+            "runtime performance have not yet been proven; game_asset_ready remains false."
         ),
     }
 

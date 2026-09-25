@@ -3,13 +3,13 @@
   "id": "human-v0",
   "label": "Human v0",
   "version": "0.1",
-  "status": "EXPERIMENTAL_HUMAN_FIRST_FOUNDATION",
-  "build_status": "HOLD_PRODUCTION_MESH_SKIN_RIG_EXPORT_NOT_INTEGRATED",
-  "truth": "Controls and presets are editor-ready data. The family does not yet claim a production human mesh or playable game asset.",
+  "status": "EXPERIMENTAL_STRUCTURAL_GAME_ASSET_CANDIDATE",
+  "build_status": "STRUCTURAL_RIGGED_GLB_CANDIDATE_BUILDER_AVAILABLE",
+  "truth": "The family now builds a real embedded glTF 2.0 candidate with Aura-derived face geometry, a shared 18-joint humanoid skeleton, normalized skin weights and starter Idle/Walk/Wave clips. RPG import, visual deformation acceptance, clothing fit and runtime performance remain unproven.",
   "rig_profiles": [
     {
       "id": "axm-humanoid-rig-v0",
-      "status": "HOLD_RIG_EXTRACTION_AND_BINDING_REQUIRED"
+      "status": "STRUCTURAL_SKIN_AND_STARTER_CLIPS_IMPLEMENTED_TARGET_ENGINE_REVIEW_PENDING"
     }
   ],
   "controls": [

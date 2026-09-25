@@ -50,10 +50,14 @@ class BlueprintTests(unittest.TestCase):
         with self.assertRaises(BlueprintError):
             validate_blueprint(value)
 
-    def test_receipt_does_not_claim_game_asset(self):
+    def test_receipt_distinguishes_candidate_from_game_ready(self):
         receipt = build_receipt(new_blueprint("player"))
+        self.assertTrue(receipt["game_asset_candidate_ready"])
         self.assertFalse(receipt["game_asset_ready"])
-        self.assertIn("HOLD", receipt["asset_build_status"])
+        self.assertEqual(
+            receipt["asset_build_status"],
+            "STRUCTURAL_RIGGED_GLB_CANDIDATE_BUILDER_AVAILABLE",
+        )
 
 
 if __name__ == "__main__":
