@@ -173,3 +173,7 @@ Machine/workshop code: **PolyForm Noncommercial 1.0.0** plus
 
 Creator Output can be used commercially under the permission terms. Third-party
 or future imported packs keep their own rights and provenance.
+
+## Reusable simulation method
+
+[Simulation experience and reuse](SIMULATION_EXPERIENCE_REUSE.md) connects the shared method to this repository, with existing machinery, proposed experiments and explicit evidence limits.
