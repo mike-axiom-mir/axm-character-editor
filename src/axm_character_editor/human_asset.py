@@ -693,20 +693,32 @@ def build_parts(controls: dict[str, Any]) -> list[dict[str, Any]]:
             lat=14,
         ))
 
-        finger_root=wrist+m.hand_len*.47
-        finger_specs=(("index",.88,-.58),("middle",.98,-.19),("ring",.93,.20),("little",.78,.58))
-        for finger,reach,z_lane in finger_specs:
+        # Stagger the metacarpal/finger roots instead of putting every digit on
+        # one straight line. The middle/ring roots sit slightly farther out and
+        # higher than index/little, giving the hand the shallow knuckle arc seen
+        # in a relaxed human hand while keeping every digit on the existing Hand
+        # joint and preserving the GLB/animation contract.
+        finger_specs=(
+            ("index",.88,-.58,.465,.245,.022),
+            ("middle",.98,-.19,.485,.250,.026),
+            ("ring",.93,.20,.475,.242,.024),
+            ("little",.78,.58,.445,.205,.018),
+        )
+        knuckle_specs=[]
+        for finger,reach,z_lane,root_factor,root_scale,knuckle_lift in finger_specs:
+            finger_root=wrist+m.hand_len*root_factor
             tip=wrist+m.hand_len*reach
             length=tip-finger_root
-            root_r=hand_r*(.245 if finger!="little" else .215)
-            tip_r=root_r*.58
+            root_r=hand_r*root_scale
+            tip_r=root_r*.56
             z=z_lane*hand_r*1.38
             finger_part=_tube_x(
                 f"finger-{finger}-{suffix.lower()}",
                 [
                     (sign*finger_root,shoulder_y,root_r,root_r*.92,{ha:1}),
-                    (sign*(finger_root+length*.32),shoulder_y+.0015*m.scale,root_r*.94,root_r*.86,{ha:1}),
-                    (sign*(finger_root+length*.68),shoulder_y,root_r*.78,root_r*.72,{ha:1}),
+                    (sign*(finger_root+length*.28),shoulder_y+.0015*m.scale,root_r*.94,root_r*.86,{ha:1}),
+                    (sign*(finger_root+length*.56),shoulder_y+.0010*m.scale,root_r*.84,root_r*.78,{ha:1}),
+                    (sign*(finger_root+length*.78),shoulder_y,root_r*.70,root_r*.65,{ha:1}),
                     (sign*tip,shoulder_y-.001*m.scale,tip_r,tip_r*.90,{ha:1}),
                 ],
                 material_role="skin",
@@ -723,13 +735,14 @@ def build_parts(controls: dict[str, Any]) -> list[dict[str, Any]]:
                 lon=16,
                 lat=8,
             ))
+            knuckle_specs.append((z_lane,root_factor+.018,knuckle_lift))
 
-        knuckle_x=wrist+m.hand_len*.49
-        for idx,z_lane in enumerate((-.58,-.19,.20,.58),start=1):
+        for idx,(z_lane,knuckle_factor,knuckle_lift) in enumerate(knuckle_specs,start=1):
             z=z_lane*hand_r*1.38
+            knuckle_x=wrist+m.hand_len*knuckle_factor
             parts.append(_ellipsoid(
                 f"knuckle-{idx}-{suffix.lower()}",
-                (sign*knuckle_x,shoulder_y+.022*m.scale,z),
+                (sign*knuckle_x,shoulder_y+knuckle_lift*m.scale,z),
                 (m.hand_len*.045,hand_r*.16,hand_r*.18),
                 {ha:1},
                 "skin",
