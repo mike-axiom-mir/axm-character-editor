@@ -13,13 +13,16 @@ button,input,select{font:inherit}.shell{display:grid;grid-template-columns:230px
 h3{font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:#9ba596;margin:24px 0 10px}.preset{width:100%;text-align:left;margin:5px 0;padding:11px 12px;border:1px solid #343b32;background:#171b16;color:#eeeee8;border-radius:7px;cursor:pointer}.preset:hover,.preset.active{border-color:#91a784;background:#232a20}
 .actions{display:grid;gap:7px;margin-top:18px}.action{padding:10px;border-radius:7px;border:1px solid #3a4337;background:#20261e;color:#f4f3ef;cursor:pointer}.action.primary{background:#d8e1c8;color:#182015;border-color:#d8e1c8;font-weight:700}
 .stage{position:relative;display:grid;place-items:center;min-height:100vh;overflow:hidden}.stage:before{content:"";position:absolute;inset:0;background:linear-gradient(transparent 70%,rgba(0,0,0,.28)),repeating-linear-gradient(90deg,rgba(255,255,255,.018) 0 1px,transparent 1px 80px)}
-.preview-wrap{position:relative;width:min(70vh,560px);aspect-ratio:3/4;display:grid;place-items:center}.tag{position:absolute;top:16px;left:16px;font-size:10px;letter-spacing:.13em;color:#aeb8a8;background:#151a14;border:1px solid #374034;padding:7px 9px}.asset-state{position:absolute;bottom:16px;left:16px;right:16px;font-size:10px;color:#d6c880;text-align:center}
-svg{width:100%;height:100%;filter:drop-shadow(0 30px 40px rgba(0,0,0,.35))}
+.preview-wrap{position:relative;width:100%;height:100vh;min-height:660px;display:grid;place-items:center}.tag{position:absolute;top:16px;left:16px;font-size:10px;letter-spacing:.13em;color:#aeb8a8;background:#151a14;border:1px solid #374034;padding:7px 9px}.asset-state{position:absolute;bottom:16px;left:16px;right:16px;font-size:10px;color:#d6c880;text-align:center}
+.viewport{position:absolute;inset:75px 0 140px;width:100%;height:calc(100% - 215px);display:block;border-radius:18px;box-shadow:0 30px 55px rgba(0,0,0,.30);touch-action:none;cursor:grab}.viewport:active{cursor:grabbing}.viewport-tools{position:absolute;top:16px;right:16px;display:grid;grid-template-columns:repeat(3,auto);gap:6px;z-index:3}.viewport-tools.pose{top:auto;bottom:110px;left:50%;right:auto;transform:translateX(-50%)}.viewbtn{border:1px solid #3a4337;background:rgba(19,24,18,.90);color:#dfe6d9;padding:7px 9px;border-radius:6px;font-size:10px;letter-spacing:.06em;cursor:pointer}.viewbtn.active,.viewbtn:hover{background:#d8e1c8;color:#182015;border-color:#d8e1c8}
 .control-group{border-top:1px solid #2d342b;padding-top:12px;margin-top:16px}.control-group:first-of-type{border-top:0;margin-top:0}.control-group h2{font-size:12px;margin:0 0 12px;letter-spacing:.07em}.control{display:grid;grid-template-columns:1fr 104px;align-items:center;gap:12px;margin:10px 0}.control label{font-size:12px;color:#d5d9d0}.number{display:grid;grid-template-columns:1fr 42px;gap:6px;align-items:center}.number output{font-size:10px;color:#9ca795;text-align:right}input[type=range]{width:100%;accent-color:#b9c9a9}input[type=color]{width:100%;height:30px;background:#111;border:1px solid #394036;padding:2px}select{width:100%;background:#171b16;color:#f2f2ec;border:1px solid #394036;border-radius:5px;padding:6px}
 .idrow{display:grid;gap:5px;margin-bottom:14px}.idrow label{font-size:10px;color:#9ba596;text-transform:uppercase;letter-spacing:.12em}.idrow input{background:#151914;border:1px solid #394036;border-radius:6px;color:#f2f2ec;padding:9px}
 .small{font-size:10px;color:#899484;line-height:1.5}.file{display:none}
 @media(max-width:1000px){.shell{grid-template-columns:190px 1fr}.right{grid-column:1/-1;max-height:none;border-width:1px 0 0;padding:20px}.stage{min-height:680px}}
 @media(max-width:700px){.shell{display:block}.left,.right{border:0}.stage{min-height:620px}.preview-wrap{width:min(92vw,500px)}}
+.history{display:grid;grid-template-columns:1fr 1fr;gap:7px}button:disabled{opacity:.42;cursor:default}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #d8e1c8;outline-offset:3px}
+[hidden]{display:none!important}.error{color:#ffc5b9;border-color:#875c4f}.focus-tools{position:absolute;top:57px;left:16px;display:flex;gap:6px;z-index:3}.timeline{position:absolute;bottom:61px;left:16px;right:16px;display:flex;align-items:center;gap:9px;font-size:10px}.timeline input{min-width:30px}.timeline button{white-space:nowrap}.asset-state{bottom:16px;line-height:1.8}.tag{max-width:calc(100% - 180px)}a{color:#d8e1c8}.small code{display:inline-block;font-size:11px;color:#e5d184}.viewport-tools{z-index:3}
+@media(max-width:1000px){.preview-wrap{height:720px;min-height:620px}}@media(max-width:700px){.preview-wrap{width:100%;height:650px}.left{padding:16px}.status{margin:12px 0}.actions{grid-template-columns:1fr 1fr}.tag{font-size:9px}}
 </style>
 </head>
 <body>
@@ -27,131 +30,50 @@ svg{width:100%;height:100%;filter:drop-shadow(0 30px 40px rgba(0,0,0,.35))}
 <aside class="panel left">
   <div class="brand">AXM / CHARACTER EDITOR</div>
   <div class="sub" id="familyLabel"></div>
-  <div class="status">HUMAN-V0 BUILD<br>Blueprint/editor state is real. The local builder now emits a rigged GLB candidate; RPG import and deformation acceptance remain HELD.</div>
+  <div class="status" id="notice" role="status" aria-live="polite">Preparing your character…</div>
+  <div id="offlineHelp" class="small">For the detailed editor, run <code>axm-character serve</code>, then <a href="http://127.0.0.1:8765/">open the local builder</a>.</div>
   <h3>Starting presets</h3>
   <div id="presets"></div>
   <div class="actions">
-    <button class="action primary" id="exportBtn">Export blueprint</button>
+    <button class="action primary" id="packageBtn">Export game package</button>
+    <button class="action" id="glbBtn" disabled>Download GLB</button>
+    <button class="action" id="exportBtn">Save blueprint</button>
     <button class="action" id="importBtn">Import blueprint</button>
     <input class="file" type="file" id="fileInput" accept=".json,application/json">
-    <button class="action" id="resetBtn">Reset preset</button>
+    <div class="history"><button class="action" id="undoBtn" disabled>Undo</button><button class="action" id="redoBtn" disabled>Redo</button></div>
+    <button class="action" id="resetBtn">Reset starting preset</button>
   </div>
-  <p class="small">The RPG profile only changes which controls are shown. It does not remove capabilities or rewrite saved characters.</p>
+  <p class="small">One character blueprint for your games. Packages include the mesh, rig, starter animations and attachment sockets. Check clothing and motion in your target engine before shipping.</p><p class="small" id="modelIdentity"></p>
 </aside>
 <main class="stage">
   <div class="preview-wrap">
-    <div class="tag">SCHEMATIC PREVIEW / NOT FINAL MESH</div>
-    <svg viewBox="0 0 420 620" aria-label="Schematic live character preview">
-      <ellipse cx="210" cy="574" rx="118" ry="17" fill="#090b09" opacity=".42"/>
-      <g id="character">
-        <g id="legs"><rect id="legL" x="153" y="421" width="42" height="120" rx="20" fill="#a96f57"/><rect id="legR" x="225" y="421" width="42" height="120" rx="20" fill="#a96f57"/><ellipse id="shoeL" cx="168" cy="543" rx="38" ry="15" fill="#282927"/><ellipse id="shoeR" cx="252" cy="543" rx="38" ry="15" fill="#282927"/></g>
-        <g id="arms"><rect id="armL" x="102" y="286" width="36" height="164" rx="18" fill="#a96f57" transform="rotate(5 120 286)"/><rect id="armR" x="282" y="286" width="36" height="164" rx="18" fill="#a96f57" transform="rotate(-5 300 286)"/></g>
-        <path id="torso" d="M135 270 Q210 235 285 270 L276 427 Q210 452 144 427 Z" fill="#59675a"/>
-        <ellipse id="neck" cx="210" cy="270" rx="34" ry="24" fill="#a96f57"/>
-        <ellipse id="head" cx="210" cy="172" rx="84" ry="101" fill="#c98f76"/>
-        <g id="hair"><path id="hairShape" d="M128 160 Q128 72 210 64 Q292 72 292 160 Q265 108 210 105 Q155 108 128 160Z" fill="#34221f"/></g>
-        <g id="face">
-          <ellipse id="eyeL" cx="180" cy="164" rx="11" ry="14" fill="#f4f2e8"/><ellipse id="eyeR" cx="240" cy="164" rx="11" ry="14" fill="#f4f2e8"/>
-          <circle id="irisL" cx="180" cy="165" r="6" fill="#5b3828"/><circle id="irisR" cx="240" cy="165" r="6" fill="#5b3828"/>
-          <path id="nose" d="M210 174 L202 206 Q210 211 218 206" fill="none" stroke="#835d4e" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-          <path id="mouth" d="M184 228 Q210 241 236 228" fill="none" stroke="#6e4039" stroke-width="4" stroke-linecap="round"/>
-        </g>
-      </g>
-    </svg>
-    <div class="asset-state">SAME BLUEPRINT → local rigged GLB candidate · browser preview remains schematic · RPG acceptance still pending</div>
+    <div class="tag" id="previewLabel">LIVE LOCAL 3D PREVIEW</div>
+    <div class="viewport-tools" aria-label="Camera views">
+      <button class="viewbtn" data-view="front">FRONT</button>
+      <button class="viewbtn active" data-view="three">3/4</button>
+      <button class="viewbtn" data-view="side">SIDE</button>
+    </div>
+    <canvas id="assetViewport" class="viewport" aria-label="Detailed exported character model"></canvas>
+    <canvas id="sketchViewport" class="viewport" aria-label="Offline approximate character sketch"></canvas>
+    <div class="focus-tools"><button class="viewbtn active" data-focus="body" aria-pressed="true">Full body</button><button class="viewbtn" data-focus="face" aria-pressed="false">Face close-up</button></div>
+    <div class="viewport-tools pose" aria-label="Pose preview">
+      <button class="viewbtn active" data-pose="idle">IDLE</button>
+      <button class="viewbtn" data-pose="walk">WALK</button>
+      <button class="viewbtn" data-pose="wave">WAVE</button>
+    </div>
+    <div class="timeline"><button class="viewbtn" id="pauseBtn">Pause</button><label for="poseTime">Pose time</label><input id="poseTime" type="range" min="0" max="2" step="0.01" value="0"><button class="viewbtn" id="rebuildBtn">Rebuild preview</button></div>
+    <div class="asset-state"><span id="assetStats"></span><br>Drag to orbit · scroll to zoom</div>
   </div>
 </main>
 <aside class="panel right">
   <div class="idrow"><label for="charId">Character ID</label><input id="charId" value="player-001"></div>
-  <div id="controls"></div>
+  <div class="idrow"><label for="profileSelect">Control set</label><select id="profileSelect"><option value="full">Full creator · all controls</option value="rpg-v0">RPG essentials</option></select></div><div id="controls"></div>
 </aside>
 </div>
-<script>
-const DATA=__AXM_EDITOR_DATA__;
-const family=DATA.family, profile=DATA.profile, presetRows=DATA.presets;
-const specs=Object.fromEntries(family.controls.map(function(x){return [x.id,x]}));
-let activePreset=presetRows[0] ? presetRows[0].id : null;
-let state={};
-
-function defaults(){const out={};family.controls.forEach(function(s){out[s.id]=s.default});return out}
-function presetById(id){return presetRows.find(function(p){return p.id===id})}
-function usePreset(id){
-  const p=presetById(id); state=defaults();
-  if(p && p.controls){Object.assign(state,p.controls);activePreset=p.id}
-  renderPresetButtons(); renderControls(); updatePreview();
-}
-function renderPresetButtons(){
-  const root=document.getElementById("presets");root.innerHTML="";
-  presetRows.forEach(function(p){
-    const b=document.createElement("button");b.className="preset"+(p.id===activePreset?" active":"");b.textContent=p.label;
-    b.onclick=function(){usePreset(p.id)};root.appendChild(b)
-  })
-}
-function renderControls(){
-  const root=document.getElementById("controls");root.innerHTML="";
-  const allowed=new Set(profile.visible_controls); const groups={};
-  family.controls.filter(function(s){return allowed.has(s.id)}).forEach(function(s){(groups[s.group]||(groups[s.group]=[])).push(s)});
-  Object.keys(groups).forEach(function(group){
-    const box=document.createElement("section");box.className="control-group";
-    const h=document.createElement("h2");h.textContent=group;box.appendChild(h);
-    groups[group].forEach(function(s){
-      const row=document.createElement("div");row.className="control";
-      const lab=document.createElement("label");lab.textContent=s.label;lab.htmlFor="ctl-"+s.id;row.appendChild(lab);
-      if(s.type==="number"){
-        const wrap=document.createElement("div");wrap.className="number";
-        const input=document.createElement("input");input.type="range";input.id="ctl-"+s.id;input.min=s.min;input.max=s.max;input.step=s.step;input.value=state[s.id];
-        const out=document.createElement("output");out.textContent=Number(state[s.id]).toFixed(2);
-        input.oninput=function(){state[s.id]=Number(input.value);out.textContent=Number(input.value).toFixed(2);activePreset=null;renderPresetButtons();updatePreview()};
-        wrap.appendChild(input);wrap.appendChild(out);row.appendChild(wrap)
-      }else if(s.type==="color"){
-        const input=document.createElement("input");input.type="color";input.id="ctl-"+s.id;input.value=state[s.id];
-        input.oninput=function(){state[s.id]=input.value;activePreset=null;renderPresetButtons();updatePreview()};row.appendChild(input)
-      }else if(s.type==="choice"){
-        const sel=document.createElement("select");sel.id="ctl-"+s.id;s.choices.forEach(function(c){const o=document.createElement("option");o.value=c;o.textContent=c.replaceAll("-"," ");sel.appendChild(o)});sel.value=state[s.id];
-        sel.onchange=function(){state[s.id]=sel.value;activePreset=null;renderPresetButtons();updatePreview()};row.appendChild(sel)
-      }
-      box.appendChild(row)
-    });root.appendChild(box)
-  })
-}
-function updatePreview(){
-  const n=function(id){return Number(state[id]||1)};
-  const skin=state.skin||"#c98f76", hair=state.hair_color||"#34221f", eye=state.eyes||"#5b3828";
-  const height=n("height"), build=n("build"), shoulders=n("shoulder_width"), hips=n("hip_width"), hs=n("head_scale"), hw=n("head_width"), eyes=n("eye_size"), spacing=n("eye_spacing"), jaw=n("jaw_width");
-  const head=document.getElementById("head");head.setAttribute("rx",84*hw);head.setAttribute("ry",101*hs);head.setAttribute("fill",skin);
-  document.getElementById("neck").setAttribute("fill",skin);
-  document.getElementById("armL").setAttribute("fill",skin);document.getElementById("armR").setAttribute("fill",skin);
-  document.getElementById("legL").setAttribute("fill",skin);document.getElementById("legR").setAttribute("fill",skin);
-  document.getElementById("hairShape").setAttribute("fill",hair);document.getElementById("hair").style.opacity=state.hair==="none"?"0":"1";
-  document.getElementById("irisL").setAttribute("fill",eye);document.getElementById("irisR").setAttribute("fill",eye);
-  const eyeOffset=30*spacing;["eyeL","irisL"].forEach(function(id){document.getElementById(id).setAttribute("cx",210-eyeOffset)});
-  ["eyeR","irisR"].forEach(function(id){document.getElementById(id).setAttribute("cx",210+eyeOffset)});
-  document.getElementById("eyeL").setAttribute("rx",11*eyes);document.getElementById("eyeL").setAttribute("ry",14*eyes);
-  document.getElementById("eyeR").setAttribute("rx",11*eyes);document.getElementById("eyeR").setAttribute("ry",14*eyes);
-  const shoulderX=72*shoulders, hipX=64*hips*build;
-  document.getElementById("torso").setAttribute("d","M"+(210-shoulderX)+" 270 Q210 235 "+(210+shoulderX)+" 270 L"+(210+hipX)+" 427 Q210 452 "+(210-hipX)+" 427 Z");
-  const char=document.getElementById("character");char.setAttribute("transform","translate(210 570) scale("+build+" "+height+") translate(-210 -570)");
-  const jawShift=(jaw-1)*8;document.getElementById("mouth").setAttribute("transform","translate(0 "+jawShift+")");
-}
-function blueprint(){
- return {schema:"axm.character.blueprint/v0.1",id:document.getElementById("charId").value.trim()||"character",family:family.id,family_version:family.version,preset:activePreset,editor_profile:profile.id,rig_profile:family.rig_profiles[0].id,controls:Object.assign({},state),authorship:{method:"HUMAN_EDITOR_EXPLICIT_FIELDS",editor:"axm-character-editor"}}
-}
-function exportBlueprint(){
- const blob=new Blob([JSON.stringify(blueprint(),null,2)+"\n"],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=blueprint().id+".character.json";a.click();setTimeout(function(){URL.revokeObjectURL(a.href)},1000)
-}
-function importBlueprint(file){
- const reader=new FileReader();reader.onload=function(){
-  try{const b=JSON.parse(reader.result);if(b.schema!=="axm.character.blueprint/v0.1"||b.family!==family.id)throw new Error("unsupported blueprint schema/family");
-  state=defaults();Object.assign(state,b.controls||{});activePreset=b.preset||null;document.getElementById("charId").value=b.id||"character";renderPresetButtons();renderControls();updatePreview()}
-  catch(err){alert("Import failed: "+err.message)}
- };reader.readAsText(file)
-}
-document.getElementById("familyLabel").textContent=family.label+" · "+profile.label;
-document.getElementById("exportBtn").onclick=exportBlueprint;
-document.getElementById("importBtn").onclick=function(){document.getElementById("fileInput").click()};
-document.getElementById("fileInput").onchange=function(e){if(e.target.files[0])importBlueprint(e.target.files[0])};
-document.getElementById("resetBtn").onclick=function(){usePreset(activePreset||presetRows[0].id)};
-usePreset(activePreset);
-</script>
+<script>__AXM_PREVIEW3D__</script>
+<script>__AXM_ASSET_VIEWER__</script>
+<script>__AXM_BLUEPRINT_STATE__</script>
+<script>const DATA=__AXM_EDITOR_DATA__;</script>
+<script>__AXM_APP__</script>
 </body>
 </html>

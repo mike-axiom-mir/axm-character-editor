@@ -23,7 +23,12 @@ class EditorBuildTests(unittest.TestCase):
             self.assertIn("AXM / CHARACTER EDITOR", body)
             self.assertIn('"id":"human-v0"', body)
             self.assertNotIn("__AXM_EDITOR_DATA__", body)
-            self.assertIn("SCHEMATIC PREVIEW / NOT FINAL MESH", body)
+            self.assertIn("LIVE LOCAL 3D PREVIEW", body)
+            self.assertIn("assetViewport", body)
+            self.assertIn("Full creator · all controls", body)
+            self.assertIn("AXMAssetViewer", body)
+            self.assertNotIn("__AXM_APP__", body)
+            self.assertNotIn("__AXM_PREVIEW3D__", body)
 
 
 if __name__ == "__main__":

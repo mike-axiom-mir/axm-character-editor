@@ -63,7 +63,7 @@ class HumanAssetTests(unittest.TestCase):
         a, ar = build_glb(blueprint)
         b, br = build_glb(changed)
         self.assertNotEqual(a, b)
-        self.assertNotEqual(ar["parts"], br["parts"])
+        self.assertNotEqual(ar["sha256"], br["sha256"])
 
     def test_glb_contains_real_skin_and_animation_contract(self):
         body, _ = build_glb(new_blueprint("player", preset_id="female-b"))
@@ -87,6 +87,45 @@ class HumanAssetTests(unittest.TestCase):
         self.assertIn("back.center", observed)
         self.assertIn("grip.R", observed)
 
+    def test_hair_shell_leaves_face_open(self):
+        from axm_character_editor.human_asset import body_metrics, build_parts
+        blueprint = new_blueprint("hair-open", preset_id="female-a")
+        controls = blueprint["controls"]
+        parts = {part["id"]: part for part in build_parts(controls)}
+        cap = parts["hair-cap"]
+        head_y = body_metrics(controls).head_y
+        central_front_low = [
+            p for p in cap["positions"]
+            if p[2] > .04 and abs(p[0]) < .05 and p[1] < head_y + .04
+        ]
+        self.assertEqual(
+            central_front_low,
+            [],
+            "hair shell must not cover the eyes/nose/mouth like the old full ellipsoid",
+        )
+
+    def test_glb_carries_face_quality_materials_and_vertex_color(self):
+        body, receipt = build_glb(new_blueprint("face-quality", preset_id="female-a"))
+        doc, _ = parse_glb(body)
+        self.assertEqual(
+            receipt["face_quality_floor"],
+            "AURA_REVISION_2_FEATURES_ADAPTED",
+        )
+        materials = {row["name"] for row in doc["materials"]}
+        self.assertTrue({
+            "face_skin",
+            "skin_detail",
+            "eyelid",
+            "mouth_seam",
+            "nostril",
+            "limbal",
+            "catchlight",
+            "brow",
+        } <= materials)
+        face_mesh = next(mesh for mesh in doc["meshes"] if mesh["name"] == "face-shell")
+        attrs = face_mesh["primitives"][0]["attributes"]
+        self.assertIn("COLOR_0", attrs)
+
     def test_package_retains_source_and_refuses_silent_overwrite(self):
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "character"
@@ -96,6 +135,9 @@ class HumanAssetTests(unittest.TestCase):
                 receipt["software_deformation_verification"]["status"],
                 "SOFTWARE_DEFORMATION_PASS",
             )
+            self.assertEqual(receipt["visual_observation"]["schema"], "axm.character.visual-observation/v0.1")
+            self.assertTrue((target / "observations" / "observation-sheet.svg").is_file())
+            self.assertTrue((target / "observations" / "visual-observation.json").is_file())
             self.assertEqual(
                 {p.name for p in target.iterdir()},
                 {
@@ -104,6 +146,7 @@ class HumanAssetTests(unittest.TestCase):
                     "source-lock.json",
                     "equipment-contract.json",
                     "deformation-verification.json",
+                    "observations",
                     "build-receipt.json",
                 },
             )

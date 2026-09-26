@@ -9,25 +9,35 @@ reusing the same Blueprint/editor/versioning machinery.
 
 ## Open the editor
 
-Open:
+The detailed editor is the default recommended starting point:
 
-`dist/character-editor.html`
+~~~bash
+python -m pip install -e .
+axm-character serve
+~~~
 
-It is one offline HTML file. No account, cloud service, CDN or AI is required.
+Open the local address printed in your terminal (normally
+`http://127.0.0.1:8765/`). No account, cloud service, CDN or AI is required.
+Python builds your character locally; the browser displays those exact GLB bytes.
 
-Current editor capabilities:
-
+- Full creator controls by default, with an optional RPG essentials view;
 - Female A / B and Male A / B starting presets;
-- bounded body and face controls;
-- skin, eye and hair colour;
-- starter hair/clothing choices;
-- live schematic preview;
-- Blueprint import/export;
-- RPG-specific editor profile that limits visible controls without deleting
-  underlying capability.
+- Aura-derived detailed face, skin vertex colours and fuller body forms;
+- orbit/zoom, front/three-quarter/side cameras and a face close-up;
+- actual Idle / Walk / Wave playback, pause and pose-time scrubbing;
+- blueprint import/save, undo/redo and reset to your chosen starting preset;
+- direct GLB download and a verified game-package ZIP with attachment sockets.
 
-**The browser preview is intentionally schematic.** It is not the generated 3D
-asset.
+Import validation rejects unsupported or out-of-range values before changing the
+current character. Imported authorship metadata and hidden profile controls survive
+round trips. The last successful mesh stays visible while changes build, with its
+out-of-date status shown and GLB download disabled until the new model arrives.
+
+`dist/character-editor.html` remains a portable offline blueprint editor. Its
+**shape sketch is approximate**, with simpler face/clothing and static poses;
+use `axm-character serve` for the detailed exported model and game exports.
+The GLB viewer supports the current human-v0 export subset, with studio lighting;
+it is not a general-purpose glTF/PBR viewer or target-engine acceptance proof.
 
 ## Build the first real 3D candidate
 
@@ -41,6 +51,7 @@ axm-character new player-001 --preset female-a --out player.character.json
 axm-character build player.character.json build/player-001
 axm-character verify-glb build/player-001/character.glb
 axm-character verify-deformation build/player-001/character.glb
+axm-character observe build/player-001/character.glb build/player-001/observations
 ~~~
 
 The package retains:
@@ -52,12 +63,19 @@ build/player-001/
     source-lock.json
     equipment-contract.json
     deformation-verification.json
+    observations/
+        observation-sheet.svg
+        visual-observation.json
     build-receipt.json
 ~~~
 
 The current `human-v0` candidate includes:
 
-- Aura-revision-2-derived facial geometry;
+- Aura-revision-2-derived facial geometry as the default quality floor;
+- corrected outward face normals and an open Aura-style scalp/hair shell;
+- almond eyes with eyelids/lashes/brows plus iris/limbal/pupil/catchlight layers;
+- sculpted lips/mouth seam, nose ala/recessed nostrils and ear detail;
+- portable absolute dermal vertex colour through standard glTF `COLOR_0`;
 - bounded body geometry;
 - real slider-driven geometry variation;
 - small hair/clothing variants;
@@ -66,7 +84,9 @@ The current `human-v0` candidate includes:
 - Idle / Walk / Wave starter clips;
 - deterministic binary GLB output;
 - independent standard-library replay of the exported skin and clips, sampling the
-  actual encoded vertices rather than trusting the builder's in-memory geometry.
+  actual encoded vertices rather than trusting the builder's in-memory geometry;
+- a dependency-free five-view visual observation sheet generated from the actual
+  published GLB and retained beside the asset.
 
 A separate face geometry proof can also be exported:
 
@@ -161,7 +181,8 @@ python tools/build_editor.py
 ~~~
 
 This regenerates `dist/character-editor.html` from the installed
-`human-v0` family, presets and RPG profile.
+`human-v0` family, presets and RPG profile, and refreshes the packaged HTML
+used by installed copies of `axm-character serve`.
 
 ## Acceptance direction
 

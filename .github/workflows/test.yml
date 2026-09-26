@@ -17,3 +17,19 @@ jobs:
       - run: python -m unittest discover -s tests -v
       - run: python tools/build_editor.py --out /tmp/character-editor.html
       - run: test -s /tmp/character-editor.html
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: python -m pip install -e .
+      - run: python tools/build_editor.py
+      - run: npm install --no-save --ignore-scripts playwright@1.56.1
+      - run: npx playwright install --with-deps chromium
+      - run: node tools/browser_smoke.cjs

@@ -50,7 +50,67 @@ class HumanFaceTests(unittest.TestCase):
         summary = face_summary(self.controls("female-a"))
         self.assertGreater(summary["vertices"], 10000)
         self.assertGreater(summary["triangles"], 20000)
-        self.assertEqual(summary["topology_status"], "STABLE_INDEX_LAYOUT_WITHIN_HUMAN_V0")
+        self.assertEqual(
+            summary["topology_status"],
+            "STABLE_FACE_SHELL_INDEX_LAYOUT_WITHIN_HUMAN_V0",
+        )
+        self.assertEqual(
+            summary["quality_floor"],
+            "AURA_REVISION_2_GEOMETRY_FEATURES_ADAPTED",
+        )
+        self.assertIn("Aura-style anatomical upper/lower lid surfaces + wet edges/lashline", summary["features"])
+
+    def test_face_shell_winding_is_outward(self):
+        shell = build_face_surface(self.controls("female-a"))
+        points = shell["positions"]
+        positive = 0
+        checked = 0
+        for a, b, c in shell["triangles"][::257]:
+            pa, pb, pc = points[a], points[b], points[c]
+            u = [pb[i] - pa[i] for i in range(3)]
+            v = [pc[i] - pa[i] for i in range(3)]
+            normal = [
+                u[1]*v[2] - u[2]*v[1],
+                u[2]*v[0] - u[0]*v[2],
+                u[0]*v[1] - u[1]*v[0],
+            ]
+            center = [
+                (pa[i] + pb[i] + pc[i]) / 3
+                for i in range(3)
+            ]
+            # human_face local coordinates are centered close to [0,0,0]
+            if sum(normal[i] * center[i] for i in range(3)) > 0:
+                positive += 1
+            checked += 1
+        self.assertGreater(checked, 20)
+        self.assertGreater(positive / checked, .95)
+
+    def test_quality_parts_are_present(self):
+        parts = {part["part"]: part for part in build_face_parts(self.controls("female-a"))}
+        required = {
+            "face-shell",
+            "upper-lip",
+            "lower-lip",
+            "mouth-seam",
+            "nostril-l",
+            "nostril-r",
+            "eye-l-sclera",
+            "eye-r-sclera",
+            "eye-l-limbal",
+            "eye-r-limbal",
+            "eye-l-upper-lid",
+            "eye-r-upper-lid",
+            "brow-l",
+            "brow-r",
+            "ear-l",
+            "ear-r",
+        }
+        self.assertTrue(required <= set(parts))
+        self.assertIn("colors", parts["face-shell"])
+        self.assertEqual(
+            len(parts["face-shell"]["colors"]),
+            len(parts["face-shell"]["positions"]),
+        )
 
     def test_obj_proof_is_written(self):
         with tempfile.TemporaryDirectory() as tmp:
