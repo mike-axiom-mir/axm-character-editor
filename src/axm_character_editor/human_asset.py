@@ -351,12 +351,184 @@ def _translate_part(
     joint: str,
 ) -> dict[str, Any]:
     ox,oy,oz=offset
-    return {
+    result = {
         "id":part["part"],
         "positions":[(ox+x*scale,oy+y*scale,oz+z*scale) for x,y,z in part["positions"]],
         "triangles":list(part["triangles"]),
         "weights":[{joint:1.0} for _ in part["positions"]],
         "material_role":part["material_role"],
+    }
+    if "colors" in part:
+        result["colors"] = [tuple(row) for row in part["colors"]]
+    return result
+
+
+def _hair_end_phi(style: str, angle: float) -> float:
+    front=max(0.0,math.sin(angle))
+    if style=="short":
+        return 1.78-.70*front**.42
+    if style=="swept":
+        return 2.05-.98*front**.38+.16*math.cos(angle)*front
+    if style=="bob":
+        return 2.34-1.30*front**.35+.07*math.cos(angle)*front
+    return 2.38-1.25*front**.35+.06*math.cos(angle)*front
+
+
+def _hair_shell(
+    name: str,
+    center: tuple[float,float,float],
+    radii: tuple[float,float,float],
+    *,
+    style: str,
+    joint: str = "Head",
+    radial_segments: int = 96,
+    vertical_segments: int = 28,
+) -> dict[str, Any]:
+    """Open scalp/hair shell adapted from Aura's swept-bob construction.
+
+    Unlike the old full ellipsoid cap, this intentionally leaves the face open.
+    """
+    cx,cy,cz=center
+    rx,ry,rz=radii
+    positions=[]
+    triangles=[]
+    weights=[]
+    for j in range(vertical_segments+1):
+        t=j/vertical_segments
+        for i in range(radial_segments):
+            a=math.tau*i/radial_segments
+            front=max(0.0,math.sin(a))
+            end_phi=_hair_end_phi(style,a)
+            phi=.025+(end_phi-.025)*t
+            x=cx+rx*math.sin(phi)*math.cos(a)
+            y=cy+ry*math.cos(phi)
+            z=cz+rz*math.sin(phi)*math.sin(a)
+            # Slight asymmetry keeps the cap from reading as a perfect helmet.
+            if style in ("swept","bob","long") and front>0:
+                x-=.010*rx/radii[0]*front*(1-t)*math.sin(a*.5)
+            positions.append((x,y,z))
+            weights.append({joint:1.0})
+    for j in range(vertical_segments):
+        for i in range(radial_segments):
+            a=j*radial_segments+i
+            b=j*radial_segments+(i+1)%radial_segments
+            c=(j+1)*radial_segments+(i+1)%radial_segments
+            d=(j+1)*radial_segments+i
+            # Match the outward winding used by the ellipsoid helper.
+            if j:
+                triangles.append((a,b,d))
+            triangles.append((b,c,d))
+    return {
+        "id":name,
+        "positions":positions,
+        "triangles":triangles,
+        "weights":_normalize_weights(weights),
+        "material_role":"hair",
+    }
+
+
+def _hair_strands(
+    name: str,
+    center: tuple[float,float,float],
+    radii: tuple[float,float,float],
+    *,
+    style: str,
+    joint: str = "Head",
+    strands: int = 56,
+    samples: int = 14,
+) -> dict[str, Any]:
+    """Sparse raised ribbon strands over the Aura-style scalp shell."""
+    cx,cy,cz=center
+    rx,ry,rz=radii
+    positions=[]
+    triangles=[]
+    weights=[]
+    half_angle=(math.tau/strands)*.055
+    offset=.0014
+    for strand in range(strands):
+        a=math.tau*(strand+.37)/strands
+        base=len(positions)
+        for j in range(samples):
+            t=.035+.93*j/(samples-1)
+            end_phi=_hair_end_phi(style,a)
+            phi=.025+(end_phi-.025)*t
+            for side in (-1,1):
+                aa=a+side*half_angle
+                x=cx+(rx+offset)*math.sin(phi)*math.cos(aa)
+                y=cy+(ry+offset)*math.cos(phi)
+                z=cz+(rz+offset)*math.sin(phi)*math.sin(aa)
+                positions.append((x,y,z))
+                weights.append({joint:1.0})
+        for j in range(samples-1):
+            a0=base+j*2
+            b0=a0+2
+            triangles.extend(_triangulate_quad(a0,b0,b0+1,a0+1))
+    return {
+        "id":name,
+        "positions":positions,
+        "triangles":triangles,
+        "weights":_normalize_weights(weights),
+        "material_role":"hair_highlight",
+    }
+
+
+def _aura_hair_shell(
+    controls: dict[str, Any],
+    metrics: BodyMetrics,
+    style: str,
+) -> dict[str, Any]:
+    """Aura-derived swept hair volume that keeps the face aperture clear."""
+    head_scale=_num(controls.get("head_scale"),1.0)*metrics.scale
+    head_width=_num(controls.get("head_width"),1.0)
+    head_depth=_num(controls.get("head_depth"),1.0)
+    radial=128
+    vertical=40
+    positions=[]
+    triangles=[]
+    weights=[]
+
+    def point(angle: float, t: float) -> tuple[float,float,float]:
+        front=max(0.0,math.sin(angle))
+        side=abs(math.cos(angle))
+        if style=="short":
+            end=1.28-.42*front**.45+.05*math.cos(angle)*front
+        elif style=="swept":
+            end=1.72-.67*front**.44+.08*math.cos(angle)*front
+        elif style=="long":
+            end=2.48-1.38*front**.42+.08*math.cos(angle)*front+.20*side
+        else:
+            end=2.18-1.24*front**.42+.08*math.cos(angle)*front
+        phase=.045+(end-.045)*t
+        wave=.0016*math.sin(t*math.pi*2.1+angle*3)*t*t
+        donor_x=(.101+wave)*math.sin(phase)*math.cos(angle)*head_width
+        donor_y=.004-(.118*head_depth+wave)*math.sin(phase)*math.sin(angle)
+        donor_z=1.532+.127*math.cos(phase)
+        local=(donor_x,donor_z-1.513,-donor_y)
+        return (
+            local[0]*head_scale,
+            metrics.head_y+local[1]*head_scale,
+            local[2]*head_scale,
+        )
+
+    for j in range(vertical+1):
+        t=j/vertical
+        for i in range(radial):
+            a=math.tau*i/radial
+            positions.append(point(a,t))
+            weights.append({"Head":1.0})
+    for j in range(vertical):
+        for i in range(radial):
+            a=j*radial+i
+            b=j*radial+(i+1)%radial
+            c=(j+1)*radial+(i+1)%radial
+            d=(j+1)*radial+i
+            triangles.extend(_triangulate_quad(a,b,c,d))
+    return {
+        "id":"hair-cap",
+        "positions":positions,
+        "triangles":triangles,
+        "weights":_normalize_weights(weights),
+        "material_role":"hair",
     }
 
 
@@ -396,15 +568,16 @@ def build_parts(controls: dict[str, Any]) -> list[dict[str, Any]]:
             (shoulder_y,m.shoulder_half*.94,.130*build*m.scale,{"Chest":1}),
         ],material_role="top",segments=44))
 
-    parts.append(_ellipsoid(
-        "neck",
-        (0,neck_y+m.neck_h*.42,0),
-        (.052*m.scale,m.neck_h*.60,.050*m.scale),
-        {"Neck":1},
-        "skin",
-        lon=28,
-        lat=12,
-    ))
+    neck_head_scale=_num(controls.get("head_scale"),1.0)*m.scale
+    neck_top=max(
+        neck_y+m.neck_h*.72,
+        m.head_y-.126*neck_head_scale,
+    )
+    parts.append(_loft_y("neck",[
+        (neck_y-.012*m.scale,.050*m.scale,.046*m.scale,{"Chest":.20,"Neck":.80}),
+        (neck_y+.030*m.scale,.046*m.scale,.043*m.scale,{"Neck":1.0}),
+        (neck_top,.041*m.scale,.040*m.scale,{"Neck":.35,"Head":.65}),
+    ],material_role="skin",segments=36))
 
     upper_r=.050*build*m.scale
     fore_r=.043*build*m.scale
@@ -491,42 +664,49 @@ def build_parts(controls: dict[str, Any]) -> list[dict[str, Any]]:
 
     hair=controls.get("hair","short")
     if hair != "none":
-        hw=.095*_num(controls.get("head_width"),1.0)*head_scale
-        hh=.112*head_scale
-        hd=.100*_num(controls.get("head_depth"),1.0)*head_scale
-        cy=m.head_y+.045*head_scale
-        parts.append(_ellipsoid(
-            "hair-cap",
-            (0,cy,-.010*head_scale),
-            (hw,hh,hd),
-            {"Head":1},
-            "hair",
-            lon=40,
-            lat=14,
-        ))
-        if hair=="swept":
-            parts.append(_ellipsoid(
-                "hair-swept-fringe",
-                (-.028*head_scale,m.head_y+.055*head_scale,.075*head_scale),
-                (.070*head_scale,.042*head_scale,.028*head_scale),
-                {"Head":1},
-                "hair",
-                lon=28,
-                lat=9,
-            ))
-        if hair in ("bob","long"):
-            side_y=m.head_y-.035*head_scale
-            side_h=.100*head_scale if hair=="bob" else .185*head_scale
-            for suffix,sign in (("L",-1),("R",1)):
-                parts.append(_ellipsoid(
-                    f"hair-side-{suffix.lower()}",
-                    (sign*.082*head_scale,side_y,.0),
-                    (.022*head_scale,side_h,.055*head_scale),
-                    {"Head":1},
-                    "hair",
-                    lon=22,
-                    lat=10,
-                ))
+        parts.append(_aura_hair_shell(controls,m,hair))
+        if hair in ("swept","bob","long"):
+            head_scale=_num(controls.get("head_scale"),1.0)*m.scale
+            fringe=[]
+            weights=[]
+            triangles=[]
+            rows=7
+            cols=32
+            anchors=[
+                (.026,.010,.145),
+                (.012,.050,.132),
+                (-.018,.093,.102),
+                (-.052,.096,.060),
+                (-.078,.073,.018),
+                (-.087,.038,-.028),
+            ]
+            for r in range(rows):
+                shift=(r-(rows-1)/2)*.0045
+                for c in range(cols):
+                    u=c/(cols-1)*(len(anchors)-1)
+                    k=min(len(anchors)-2,int(u))
+                    t=u-k
+                    a=anchors[k]
+                    b=anchors[k+1]
+                    x=(a[0]+(b[0]-a[0])*t+shift)*head_scale
+                    y=m.head_y+(a[2]+(b[2]-a[2])*t)*head_scale
+                    z=(a[1]+(b[1]-a[1])*t)*head_scale
+                    fringe.append((x,y,z))
+                    weights.append({"Head":1.0})
+            for r in range(rows-1):
+                for c in range(cols-1):
+                    a=r*cols+c
+                    b=a+1
+                    d=(r+1)*cols+c
+                    cc=d+1
+                    triangles.extend(_triangulate_quad(a,b,cc,d))
+            parts.append({
+                "id":"hair-swept-fringe",
+                "positions":fringe,
+                "triangles":triangles,
+                "weights":_normalize_weights(weights),
+                "material_role":"hair",
+            })
     return parts
 
 
@@ -663,30 +843,59 @@ class _BufferBuilder:
 def _material_table(
     controls: dict[str, Any],
 ) -> tuple[list[dict[str, Any]], dict[str,int]]:
-    roles={
-        "skin":(_hex_rgb(controls.get("skin"),"#c98f76"),.0,.48),
-        "lip":((.55,.19,.18,1),.0,.38),
-        "sclera":((.94,.96,.94,1),.0,.28),
-        "iris":(_hex_rgb(controls.get("eyes"),"#5b3828"),.05,.25),
-        "pupil":((.015,.012,.010,1),.0,.18),
-        "hair":(_hex_rgb(controls.get("hair_color"),"#34221f"),.0,.52),
-        "top":((.20,.32,.34,1),.0,.62),
-        "bottom":((.12,.16,.18,1),.0,.68),
-        "shoes":((.06,.06,.055,1),.05,.58),
+    skin_color=_hex_rgb(controls.get("skin"),"#c98f76")
+    hair_color=_hex_rgb(controls.get("hair_color"),"#34221f")
+
+    def tint(color, factors):
+        return tuple(
+            max(0.0,min(1.0,color[i]*factors[i]))
+            for i in range(3)
+        )+(color[3],)
+
+    specs={
+        "skin":{"color":skin_color,"metal":0.0,"rough":.46},
+        "face_skin":{"color":(1.0,1.0,1.0,1.0),"metal":0.0,"rough":.44},
+        "skin_detail":{"color":tint(skin_color,(.94,.90,.88)),"metal":0.0,"rough":.43},
+        "eyelid":{"color":tint(skin_color,(.97,.91,.90)),"metal":0.0,"rough":.40},
+        "lip":{"color":tint(skin_color,(.86,.48,.48)),"metal":0.0,"rough":.32},
+        "mouth_seam":{"color":(.16,.035,.030,1), "metal":0.0,"rough":.36},
+        "nostril":{"color":(.035,.012,.010,1), "metal":0.0,"rough":.42},
+        "sclera":{"color":(.88,.92,.89,1), "metal":0.0,"rough":.20},
+        "iris":{"color":_hex_rgb(controls.get("eyes"),"#5b3828"),"metal":.03,"rough":.18},
+        "limbal":{"color":(.025,.018,.016,1), "metal":0.0,"rough":.18},
+        "pupil":{"color":(.008,.006,.005,1), "metal":0.0,"rough":.14},
+        "catchlight":{"color":(1.0,1.0,1.0,1), "metal":0.0,"rough":.06,"emissive":[.55,.55,.55]},
+        "brow":{"color":tint(hair_color,(.68,.58,.54)),"metal":0.0,"rough":.46},
+        "hair":{"color":hair_color,"metal":0.0,"rough":.40},
+        "hair_highlight":{"color":tint(hair_color,(1.28,1.20,1.16)),"metal":0.0,"rough":.32},
+        "top":{"color":(.20,.32,.34,1),"metal":0.0,"rough":.62},
+        "bottom":{"color":(.12,.16,.18,1),"metal":0.0,"rough":.68},
+        "shoes":{"color":(.06,.06,.055,1),"metal":.05,"rough":.58},
     }
     mats=[]
     index={}
-    for role,(color,metal,rough) in roles.items():
+    face_roles={
+        "skin","face_skin","skin_detail","eyelid","lip","mouth_seam","nostril",
+        "sclera","iris","limbal","pupil","catchlight","brow","hair","hair_highlight",
+    }
+    for role,spec in specs.items():
         index[role]=len(mats)
-        mats.append({
+        mat={
             "name":role,
             "pbrMetallicRoughness":{
-                "baseColorFactor":list(color),
-                "metallicFactor":metal,
-                "roughnessFactor":rough,
+                "baseColorFactor":list(spec["color"]),
+                "metallicFactor":spec["metal"],
+                "roughnessFactor":spec["rough"],
             },
             "doubleSided":False,
-        })
+            "extras":{
+                "axm_material_role":role,
+                "quality_source":"Aura revision 2 adaptation" if role in face_roles else "human-v0",
+            },
+        }
+        if spec.get("emissive") is not None:
+            mat["emissiveFactor"]=list(spec["emissive"])
+        mats.append(mat)
     return mats,index
 
 
@@ -728,6 +937,11 @@ def build_glb(blueprint: dict[str, Any]) -> tuple[bytes, dict[str, Any]]:
         norm_a=buf.accessor(norm,"VEC3",5126,target=34962)
         joint_a=buf.accessor(jr,"VEC4",5123,target=34962)
         weight_a=buf.accessor(wr,"VEC4",5126,target=34962)
+        color_a=None
+        if part.get("colors") is not None:
+            if len(part["colors"]) != len(pos):
+                raise HumanAssetError("vertex colors must match part positions")
+            color_a=buf.accessor(part["colors"],"VEC4",5126,target=34962)
         idx_a=buf.accessor(
             ([i] for t in tri for i in t),
             "SCALAR",
@@ -739,10 +953,13 @@ def build_glb(blueprint: dict[str, Any]) -> tuple[bytes, dict[str, Any]]:
             "name":part["id"],
             "primitives":[{
                 "attributes":{
-                    "POSITION":pos_a,
-                    "NORMAL":norm_a,
-                    "JOINTS_0":joint_a,
-                    "WEIGHTS_0":weight_a,
+                    **{
+                        "POSITION":pos_a,
+                        "NORMAL":norm_a,
+                        "JOINTS_0":joint_a,
+                        "WEIGHTS_0":weight_a,
+                    },
+                    **({"COLOR_0":color_a} if color_a is not None else {}),
                 },
                 "indices":idx_a,
                 "material":mat_index[part["material_role"]],
@@ -882,6 +1099,7 @@ def build_glb(blueprint: dict[str, Any]) -> tuple[bytes, dict[str, Any]]:
         "equipment_slots":len(equipment["slots"]),
         "attachment_sockets":len(equipment["sockets"]),
         "socket_ids":[row["id"] for row in equipment["sockets"]],
+        "face_quality_floor":"AURA_REVISION_2_FEATURES_ADAPTED",
         "status":"STRUCTURAL_RIGGED_GLB_CANDIDATE",
         "target_engine_status":"HOLD_RPG_IMPORT_AND_VISUAL_DEFORMATION_REVIEW_NOT_YET_RUN",
         "truth":(
