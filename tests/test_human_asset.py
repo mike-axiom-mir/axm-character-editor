@@ -87,6 +87,27 @@ class HumanAssetTests(unittest.TestCase):
         self.assertIn("back.center", observed)
         self.assertIn("grip.R", observed)
 
+    def test_glb_carries_face_quality_materials_and_vertex_color(self):
+        body, receipt = build_glb(new_blueprint("face-quality", preset_id="female-a"))
+        doc, _ = parse_glb(body)
+        self.assertEqual(
+            receipt["face_quality_floor"],
+            "AURA_REVISION_2_FEATURES_ADAPTED",
+        )
+        materials = {row["name"] for row in doc["materials"]}
+        self.assertTrue({
+            "skin_detail",
+            "eyelid",
+            "mouth_seam",
+            "nostril",
+            "limbal",
+            "catchlight",
+            "brow",
+        } <= materials)
+        face_mesh = next(mesh for mesh in doc["meshes"] if mesh["name"] == "face-shell")
+        attrs = face_mesh["primitives"][0]["attributes"]
+        self.assertIn("COLOR_0", attrs)
+
     def test_package_retains_source_and_refuses_silent_overwrite(self):
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "character"
