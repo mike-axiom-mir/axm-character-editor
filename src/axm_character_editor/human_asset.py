@@ -944,7 +944,9 @@ def _material_table(
     return mats,index
 
 
-def build_glb(blueprint: dict[str, Any]) -> tuple[bytes, dict[str, Any]]:
+def build_glb(
+    blueprint: dict[str, Any], *, buffer_backend: str = "builtin",
+) -> tuple[bytes, dict[str, Any]]:
     from .blueprint import signature_bundle, validate_blueprint
 
     blueprint = validate_blueprint(blueprint)
@@ -959,7 +961,17 @@ def build_glb(blueprint: dict[str, Any]) -> tuple[bytes, dict[str, Any]]:
     joint_names={j["id"] for j in joints}
     equipment=compile_human_v0_equipment(controls,metrics,joint_names=joint_names)
     joint_order={j["id"]:i for i,j in enumerate(joints)}
-    buf=_BufferBuilder()
+    buffer_source = None
+    if buffer_backend == "builtin":
+        buf = _BufferBuilder()
+    elif buffer_backend == "form-engine":
+        from .form_engine_adapter import create_buffer_builder
+        try:
+            buf, buffer_source = create_buffer_builder()
+        except ValueError as exc:
+            raise HumanAssetError(str(exc)) from exc
+    else:
+        raise HumanAssetError(f"unknown buffer backend: {buffer_backend!r}")
     materials,mat_index=_material_table(controls)
     meshes=[]
     nodes=[]
@@ -1153,6 +1165,8 @@ def build_glb(blueprint: dict[str, Any]) -> tuple[bytes, dict[str, Any]]:
             "clothing fit and runtime performance are separate pending checks."
         ),
     }
+    if buffer_source is not None:
+        receipt["buffer_backend"] = buffer_source
     return body,receipt
 
 
@@ -1256,6 +1270,7 @@ def write_glb(
     path: str|Path,
     *,
     replace: bool=False,
+    buffer_backend: str="builtin",
 ) -> dict[str, Any]:
     import os
     import tempfile
@@ -1268,7 +1283,7 @@ def write_glb(
     if path.exists() and not path.is_file():
         raise HumanAssetError("game asset destination exists and is not a file")
 
-    body,receipt=build_glb(blueprint)
+    body,receipt=build_glb(blueprint, buffer_backend=buffer_backend)
     verification=verify_glb(body)
     if verification["status"] != "PASS":
         raise HumanAssetError("generated GLB failed structural verification")
@@ -1294,6 +1309,8 @@ def write_glb(
 def build_package(
     blueprint: dict[str, Any],
     target: str|Path,
+    *,
+    buffer_backend: str="builtin",
 ) -> dict[str, Any]:
     from .blueprint import validate_blueprint
     from .game_asset_verify import verify_path as verify_deformation_path
@@ -1309,7 +1326,7 @@ def build_package(
             json.dumps(blueprint,indent=2,sort_keys=True)+"\n",
             encoding="utf-8",
         )
-        receipt=write_glb(blueprint,target/"character.glb")
+        receipt=write_glb(blueprint,target/"character.glb",buffer_backend=buffer_backend)
         equipment=compile_human_v0_equipment(
             blueprint["controls"],
             body_metrics(blueprint["controls"]),
@@ -1342,6 +1359,8 @@ def build_package(
                 "execution time."
             ),
         }
+        if "buffer_backend" in receipt:
+            source_lock["buffer_backend"] = receipt["buffer_backend"]
         (target/"source-lock.json").write_text(
             json.dumps(source_lock,indent=2,sort_keys=True)+"\n",
             encoding="utf-8",
