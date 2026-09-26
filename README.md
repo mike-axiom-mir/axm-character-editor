@@ -57,7 +57,11 @@ build/player-001/
 
 The current `human-v0` candidate includes:
 
-- Aura-revision-2-derived facial geometry;
+- Aura-revision-2-derived facial geometry as the default quality floor;
+- corrected outward face normals and an open Aura-style scalp/hair shell;
+- almond eyes with eyelids/lashes/brows plus iris/limbal/pupil/catchlight layers;
+- sculpted lips/mouth seam, nose ala/recessed nostrils and ear detail;
+- portable absolute dermal vertex colour through standard glTF `COLOR_0`;
 - bounded body geometry;
 - real slider-driven geometry variation;
 - small hair/clothing variants;
