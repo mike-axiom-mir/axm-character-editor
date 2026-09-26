@@ -58,7 +58,7 @@ class HumanFaceTests(unittest.TestCase):
             summary["quality_floor"],
             "AURA_REVISION_2_GEOMETRY_FEATURES_ADAPTED",
         )
-        self.assertIn("upper/lower eyelid rims and lashline", summary["features"])
+        self.assertIn("Aura-style anatomical upper/lower lid surfaces + wet edges/lashline", summary["features"])
 
     def test_face_shell_winding_is_outward(self):
         shell = build_face_surface(self.controls("female-a"))
