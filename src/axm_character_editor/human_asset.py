@@ -774,6 +774,16 @@ def build_parts(controls: dict[str, Any]) -> list[dict[str, Any]]:
             (ankle_y+m.lower_leg*.28,leg_r*.67,leg_r*.70,{sh:.82,ft:.18}),
             (ankle_y,leg_r*.52,leg_r*.58,{sh:.34,ft:.66}),
         ],material_role=lower_leg_role,segments=30))
+        # The thigh and shin used to meet at one identical knee ring. That kept
+        # the rig valid, but made the joint read as two tapered tubes touching.
+        # Overlap a short blended profile around the joint so the rest silhouette
+        # has a small human knee volume while keeping the existing Thigh/Shin rig.
+        parts.append(_tube_y(f"knee-bridge-{suffix.lower()}",x,[
+            (knee_y+.032*m.scale,leg_r*.80,leg_r*.78,{th:.62,sh:.38}),
+            (knee_y+.010*m.scale,leg_r*.82,leg_r*.80,{th:.52,sh:.48}),
+            (knee_y-.012*m.scale,leg_r*.80,leg_r*.79,{th:.42,sh:.58}),
+            (knee_y-.036*m.scale,leg_r*.77,leg_r*.76,{th:.28,sh:.72}),
+        ],material_role=lower_leg_role,segments=30))
         # Carry the lower-leg silhouette slightly through the ankle joint instead
         # of ending it at a hard ring. This keeps the existing Shin/Foot rig while
         # giving footwear a continuous calf -> ankle -> foot transition.
