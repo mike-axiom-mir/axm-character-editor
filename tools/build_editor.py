@@ -7,6 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "src" / "axm_character_editor" / "data"
 TEMPLATE = ROOT / "editor" / "template.html"
+PREVIEW = ROOT / "editor" / "preview3d.js"
 
 
 def read(path: Path):
@@ -28,9 +29,16 @@ def build(out: Path) -> Path:
     ).replace("</", "<\\/")
     source = TEMPLATE.read_text(encoding="utf-8")
     marker = "__AXM_EDITOR_DATA__"
+    preview_marker = "__AXM_PREVIEW3D__"
     if source.count(marker) != 1:
         raise RuntimeError("editor template must contain exactly one data marker")
-    result = source.replace(marker, payload)
+    if source.count(preview_marker) != 1:
+        raise RuntimeError("editor template must contain exactly one preview marker")
+    preview = PREVIEW.read_text(encoding="utf-8")
+    viewer = (ROOT / "editor" / "asset-viewer.js").read_text(encoding="utf-8")
+    app = (ROOT / "editor" / "app.js").read_text(encoding="utf-8")
+    state = (ROOT / "editor" / "state.js").read_text(encoding="utf-8")
+    result = source.replace(preview_marker, preview).replace(marker, payload).replace("__AXM_ASSET_VIEWER__", viewer).replace("__AXM_APP__", app).replace("__AXM_BLUEPRINT_STATE__", state)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(result, encoding="utf-8")
     return out
@@ -41,6 +49,9 @@ def main() -> None:
     parser.add_argument("--out", default="dist/character-editor.html")
     args = parser.parse_args()
     path = build((ROOT / args.out).resolve())
+    packaged = DATA / "editor" / "character-editor.html"
+    packaged.parent.mkdir(parents=True, exist_ok=True)
+    packaged.write_bytes(path.read_bytes())
     print(path)
 
 

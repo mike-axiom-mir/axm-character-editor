@@ -42,5 +42,16 @@ class IndependentGameAssetVerificationTests(unittest.TestCase):
         self.assertGreater(len(asset.mesh_records()), 10)
 
 
+class WavePoseTests(unittest.TestCase):
+    def test_wave_raises_right_hand_above_head(self):
+        from axm_character_editor.game_asset_verify import Asset
+        from axm_character_editor.human_asset import build_glb
+        asset = Asset(build_glb(new_blueprint("wave-pose"))[0])
+        world = asset.pose("Wave", .82)
+        nodes = {n["name"]: i for i, n in enumerate(asset.nodes)}
+        # Row-major world transforms: translation Y at index 7.
+        self.assertGreater(world[nodes["Hand.R"]][7], world[nodes["Head"]][7])
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -16,6 +16,7 @@ from .human_asset import HumanAssetError, build_package, verify_glb_path
 from .game_asset_verify import GameAssetVerificationError, verify_path as verify_deformation_path
 from .human_face import HumanFaceError, face_summary, write_obj as write_face_obj
 from .equipment import EquipmentContractError, compile_human_v0_equipment
+from .observation import write_observation_pack
 
 
 def _dump(value) -> None:
@@ -72,10 +73,22 @@ def main() -> None:
         help="Show the semantic garment slots and attachment sockets for a character Blueprint",
     )
     equipment.add_argument("blueprint")
+    observe = commands.add_parser(
+        "observe",
+        help="Render a dependency-free visual observation sheet from an exported GLB",
+    )
+    observe.add_argument("glb")
+    observe.add_argument("output_dir")
+
+    web = commands.add_parser("serve", help="Open the detailed browser character editor with the local builder")
+    web.add_argument("--port", type=int, default=8765)
 
     args = parser.parse_args()
     try:
-        if args.command == "catalog":
+        if args.command == "serve":
+            from .editor_server import serve
+            serve(args.port)
+        elif args.command == "catalog":
             _dump(catalog())
         elif args.command == "new":
             value = new_blueprint(
@@ -112,6 +125,8 @@ def main() -> None:
                 body_metrics(blueprint["controls"]),
                 joint_names={row["id"] for row in skeleton(blueprint["controls"])},
             ))
+        elif args.command == "observe":
+            _dump(write_observation_pack(Path(args.glb), Path(args.output_dir)))
     except (
         BlueprintError,
         HumanFaceError,

@@ -21,5 +21,6 @@ where = ["src"]
 axm_character_editor = [
   "data/families/*.json",
   "data/presets/*.json",
-  "data/profiles/*.json"
+  "data/profiles/*.json",
+  "data/editor/*.html"
 ]

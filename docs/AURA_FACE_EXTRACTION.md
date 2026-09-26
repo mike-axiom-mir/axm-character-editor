@@ -93,3 +93,28 @@ continuity. It does not establish:
 - RPG-engine import or performance.
 
 Those are separate growth stages rather than hidden claims attached to the donor.
+
+## Quality-floor transplant
+
+The first reusable adaptation preserved Aura's profile equations but simplified several
+visual layers. The current quality-floor pass restores the high-value parts that made
+the donor visibly stronger:
+
+- outward face-shell winding and normals;
+- denser stable face-shell sampling;
+- absolute dermal `COLOR_0` variation on a neutral face material;
+- almond sclera surfaces;
+- limbal ring, iris, pupil and catchlight layers;
+- upper/lower eyelid rims and lashline;
+- shaped brows;
+- nose ala, columella and recessed dark nostril detail;
+- mouth seam and philtrum detail;
+- outer/inner ear geometry;
+- an open Aura-style scalp shell instead of the old full ellipsoid hair cap.
+
+The old ellipsoid hair cap literally covered the facial geometry and the original face
+shell winding produced inward normals. Those were implementation regressions, not
+limits of the Aura construction. Both now have regression tests.
+
+This still does not copy the Android body or one-off studio scene. The face workflow
+is transplanted into the reusable human-v0 Blueprint/rig/GLB path.
