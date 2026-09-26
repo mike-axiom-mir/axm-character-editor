@@ -2,9 +2,9 @@ from __future__ import annotations
 
 """Deterministic human-v0 face construction adapted from AXM Aura revision 2.
 
-Aura's source used a dense profile surface plus explicit local facial volumes. This
-module keeps that useful construction idea but exposes it through Character Editor
-controls and a renderer-neutral mesh recipe. No Blender dependency is required.
+Aura's source used a dense profile surface plus explicit local facial volumes.
+This module keeps that construction as the human-v0 quality floor and exposes it
+through Character Editor controls without requiring Blender.
 
 Coordinates returned here use metres, Y-up, +Z forward.
 """
@@ -14,7 +14,7 @@ import math
 from pathlib import Path
 from typing import Any, Iterable
 
-FACE_MESH_SCHEMA = "axm.character.human-face-mesh/v0.1"
+FACE_MESH_SCHEMA = "axm.character.human-face-mesh/v0.2"
 AURA_DONOR_Z_MIN = 1.381
 AURA_DONOR_Z_MAX = 1.645
 AURA_DONOR_Z_CENTER = (AURA_DONOR_Z_MIN + AURA_DONOR_Z_MAX) * 0.5
@@ -99,7 +99,10 @@ def parameters_from_controls(controls: dict[str, Any]) -> FaceParameters:
         "nose_projection": 1.0,
         "mouth_width": 1.0,
     }
-    values = {key: _finite_number(controls.get(key, default), key) for key, default in defaults.items()}
+    values = {
+        key: _finite_number(controls.get(key, default), key)
+        for key, default in defaults.items()
+    }
     for key, value in values.items():
         if not 0.5 <= value <= 1.6:
             raise HumanFaceError(f"{key} is outside the supported construction range")
@@ -152,15 +155,129 @@ def _to_gltf(x: float, donor_y: float, donor_z: float) -> tuple[float, float, fl
     return (x, donor_z - AURA_DONOR_Z_CENTER, -donor_y)
 
 
-def _triangulate_quad(a: int, b: int, c: int, d: int) -> tuple[tuple[int, int, int], tuple[int, int, int]]:
+def _triangulate_quad(
+    a: int, b: int, c: int, d: int
+) -> tuple[tuple[int, int, int], tuple[int, int, int]]:
     return (a, b, c), (a, c, d)
+
+
+def _part(
+    name: str,
+    material_role: str,
+    positions: list[tuple[float, float, float]],
+    triangles: list[tuple[int, int, int]],
+    **extra: Any,
+) -> dict[str, Any]:
+    return {
+        "schema": FACE_MESH_SCHEMA,
+        "part": name,
+        "material_role": material_role,
+        "positions": positions,
+        "triangles": triangles,
+        **extra,
+    }
+
+
+def _uv_ellipsoid(
+    center: tuple[float, float, float],
+    radii: tuple[float, float, float],
+    *,
+    lon: int = 32,
+    lat: int = 16,
+) -> tuple[list[tuple[float, float, float]], list[tuple[int, int, int]]]:
+    cx, cy, cz = center
+    rx, ry, rz = radii
+    positions: list[tuple[float, float, float]] = []
+    triangles: list[tuple[int, int, int]] = []
+    for j in range(lat + 1):
+        phi = math.pi * j / lat
+        sy = math.cos(phi)
+        ring = math.sin(phi)
+        for i in range(lon):
+            theta = math.tau * i / lon
+            positions.append((
+                cx + rx * ring * math.cos(theta),
+                cy + ry * sy,
+                cz + rz * ring * math.sin(theta),
+            ))
+    for j in range(lat):
+        for i in range(lon):
+            a = j * lon + i
+            b = j * lon + (i + 1) % lon
+            c = (j + 1) * lon + (i + 1) % lon
+            d = (j + 1) * lon + i
+            if j != 0:
+                triangles.append((a, b, d))
+            if j != lat - 1:
+                triangles.append((b, c, d))
+    return positions, triangles
+
+
+def _donor_ribbon(
+    name: str,
+    material_role: str,
+    points: list[tuple[float, float, float]],
+    width: float,
+) -> dict[str, Any]:
+    positions: list[tuple[float, float, float]] = []
+    triangles: list[tuple[int, int, int]] = []
+    half = width * .5
+    for x, y, z in points:
+        positions.append(_to_gltf(x, y, z - half))
+        positions.append(_to_gltf(x, y, z + half))
+    for i in range(len(points) - 1):
+        a = i * 2
+        b = a + 2
+        triangles.extend(_triangulate_quad(a, b, b + 1, a + 1))
+    return _part(name, material_role, positions, triangles)
+
+
+def _donor_disc(
+    name: str,
+    material_role: str,
+    center: tuple[float, float, float],
+    outer_radius: float,
+    *,
+    inner_radius: float = 0.0,
+    segments: int = 48,
+) -> dict[str, Any]:
+    cx, cy, cz = center
+    positions: list[tuple[float, float, float]] = []
+    triangles: list[tuple[int, int, int]] = []
+    if inner_radius <= 0:
+        positions.append(_to_gltf(cx, cy, cz))
+        for i in range(segments):
+            a = math.tau * i / segments
+            positions.append(_to_gltf(
+                cx + outer_radius * math.cos(a),
+                cy,
+                cz + outer_radius * math.sin(a),
+            ))
+        for i in range(segments):
+            triangles.append((0, 1 + i, 1 + (i + 1) % segments))
+    else:
+        for radius in (inner_radius, outer_radius):
+            for i in range(segments):
+                a = math.tau * i / segments
+                positions.append(_to_gltf(
+                    cx + radius * math.cos(a),
+                    cy,
+                    cz + radius * math.sin(a),
+                ))
+        for i in range(segments):
+            a = i
+            b = (i + 1) % segments
+            c = segments + (i + 1) % segments
+            d = segments + i
+            triangles.extend(_triangulate_quad(a, b, c, d))
+    return _part(name, material_role, positions, triangles)
 
 
 def build_face_surface(
     controls: dict[str, Any],
     *,
-    radial_segments: int = 128,
-    vertical_segments: int = 110,
+    radial_segments: int = 160,
+    vertical_segments: int = 132,
 ) -> dict[str, Any]:
     if radial_segments < 32 or radial_segments > 512 or radial_segments % 2:
         raise HumanFaceError("radial_segments must be an even integer from 32 through 512")
@@ -168,18 +285,39 @@ def build_face_surface(
         raise HumanFaceError("vertical_segments must be from 24 through 440")
     p = parameters_from_controls(controls)
     positions: list[tuple[float, float, float]] = []
+    colors: list[tuple[float, float, float, float]] = []
     indices: list[tuple[int, int, int]] = []
     for j in range(vertical_segments + 1):
-        donor_z = AURA_DONOR_Z_MIN + (AURA_DONOR_Z_MAX - AURA_DONOR_Z_MIN) * j / vertical_segments
+        donor_z = (
+            AURA_DONOR_Z_MIN
+            + (AURA_DONOR_Z_MAX - AURA_DONOR_Z_MIN) * j / vertical_segments
+        )
         rx, ry = _profile_dimensions(donor_z, p)
         for i in range(radial_segments):
             angle = math.tau * i / radial_segments
             x = rx * math.cos(angle)
-            if math.sin(angle) > 0:
+            front = max(0.0, math.sin(angle))
+            if front > 0:
                 donor_y = _face_depth_y(x, donor_z, p)
             else:
                 donor_y = -ry * math.sin(angle) + .011 * (1 - math.sin(angle))
             positions.append(_to_gltf(x, donor_y, donor_z))
+
+            blush = (
+                _gauss(x, -.054 * p.head_width, .022 * p.head_width)
+                + _gauss(x, .054 * p.head_width, .022 * p.head_width)
+            ) * _gauss(donor_z, 1.490, .020) * front
+            under_eye = (
+                _gauss(x, -.035 * p.eye_spacing * p.head_width, .023 * p.head_width)
+                + _gauss(x, .035 * p.eye_spacing * p.head_width, .023 * p.head_width)
+            ) * _gauss(donor_z, 1.505, .012) * front
+            colors.append((
+                1.0,
+                max(.82, 1.0 - .055 * blush - .018 * under_eye),
+                max(.80, 1.0 - .040 * blush - .010 * under_eye),
+                1.0,
+            ))
+
     for j in range(vertical_segments):
         for i in range(radial_segments):
             a = j * radial_segments + i
@@ -187,31 +325,34 @@ def build_face_surface(
             c = (j + 1) * radial_segments + (i + 1) % radial_segments
             d = (j + 1) * radial_segments + i
             indices.extend(_triangulate_quad(a, b, c, d))
-    return {
-        "schema": FACE_MESH_SCHEMA,
-        "part": "face-shell",
-        "material_role": "skin",
-        "positions": positions,
-        "triangles": indices,
-        "topology": {
+    return _part(
+        "face-shell",
+        "skin",
+        positions,
+        indices,
+        colors=colors,
+        topology={
             "radial_segments": radial_segments,
             "vertical_segments": vertical_segments,
             "vertex_count": len(positions),
             "triangle_count": len(indices),
             "stable_across_controls": True,
         },
-        "donor": {
+        donor={
             "name": "Aura revision 2 face construction",
             "source_sha256": "4c33838e3ed7fff0c5a83468ecc03849a23c2603b574397f2b1acd8284cf620a",
-            "adaptation": "profile surface and local facial-volume equations parameterized for human-v0; topology mask removed so morph controls retain one index layout",
+            "adaptation": (
+                "dense profile/local facial volumes plus dermal vertex variation; "
+                "face-shell topology remains stable across human-v0 controls"
+            ),
         },
-    }
+    )
 
 
 def build_lips(
     controls: dict[str, Any],
     *,
-    horizontal_segments: int = 64,
+    horizontal_segments: int = 96,
     depth_segments: int = 8,
 ) -> list[dict[str, Any]]:
     if horizontal_segments < 16 or horizontal_segments > 256:
@@ -250,97 +391,279 @@ def build_lips(
                 c = (i + 1) * stride + j + 1
                 d = i * stride + j + 1
                 triangles.extend(_triangulate_quad(a, b, c, d))
-        result.append({
-            "schema": FACE_MESH_SCHEMA,
-            "part": "upper-lip" if upper else "lower-lip",
-            "material_role": "lip",
-            "positions": positions,
-            "triangles": triangles,
-        })
+        result.append(_part(
+            "upper-lip" if upper else "lower-lip",
+            "lip",
+            positions,
+            triangles,
+        ))
     return result
 
 
-def _uv_ellipsoid(
-    center: tuple[float, float, float],
-    radii: tuple[float, float, float],
-    *,
-    lon: int = 32,
-    lat: int = 16,
-) -> tuple[list[tuple[float, float, float]], list[tuple[int, int, int]]]:
-    cx, cy, cz = center
-    rx, ry, rz = radii
-    positions: list[tuple[float, float, float]] = []
-    triangles: list[tuple[int, int, int]] = []
-    for j in range(lat + 1):
-        phi = math.pi * j / lat
-        sy = math.cos(phi)
-        ring = math.sin(phi)
-        for i in range(lon):
-            theta = math.tau * i / lon
-            positions.append((cx + rx * ring * math.cos(theta), cy + ry * sy, cz + rz * ring * math.sin(theta)))
-    for j in range(lat):
-        for i in range(lon):
-            a = j * lon + i
-            b = j * lon + (i + 1) % lon
-            c = (j + 1) * lon + (i + 1) % lon
-            d = (j + 1) * lon + i
-            if j != 0:
-                triangles.append((a, b, d))
-            if j != lat - 1:
-                triangles.append((b, c, d))
-    return positions, triangles
+def build_mouth_details(controls: dict[str, Any]) -> list[dict[str, Any]]:
+    p = parameters_from_controls(controls)
+    seam = []
+    for i in range(65):
+        u = -1 + 2 * i / 64
+        x = u * .027 * p.mouth_width
+        z = 1.447 + .0033 * u*u
+        donor_y = _face_depth_y(x, z, p) - .0031 * (1 - .35*abs(u))
+        seam.append((x, donor_y, z))
+    parts = [_donor_ribbon("mouth-seam", "mouth_seam", seam, .00105)]
+
+    philtrum_w = .0065 * p.mouth_width
+    for side in (-1, 1):
+        points = []
+        for i in range(7):
+            t = i / 6
+            x = side * philtrum_w * (1 - .38*t)
+            z = 1.458 + .015*t
+            donor_y = _face_depth_y(x, z, p) - .0009
+            points.append((x, donor_y, z))
+        parts.append(_donor_ribbon(
+            f"philtrum-{'l' if side < 0 else 'r'}",
+            "skin_detail",
+            points,
+            .0007,
+        ))
+    return parts
+
+
+def build_nose_details(controls: dict[str, Any]) -> list[dict[str, Any]]:
+    p = parameters_from_controls(controls)
+    result = []
+    nw = p.nose_width
+    for side in (-1, 1):
+        x = side * .0105 * nw
+        z = 1.474
+        donor_y = _face_depth_y(x, z, p) - .0016 * p.nose_projection
+        center = _to_gltf(x, donor_y, z)
+        ala_positions, ala_triangles = _uv_ellipsoid(
+            center,
+            (.0070*nw, .0048, .0042*p.nose_projection),
+            lon=28,
+            lat=12,
+        )
+        result.append(_part(
+            f"nose-ala-{'l' if side < 0 else 'r'}",
+            "skin_detail",
+            ala_positions,
+            ala_triangles,
+        ))
+
+        opening_center = _to_gltf(
+            side * .0095 * nw,
+            donor_y - .0030 * p.nose_projection,
+            1.4725,
+        )
+        opening_positions, opening_triangles = _uv_ellipsoid(
+            opening_center,
+            (.0030*nw, .0015, .00085),
+            lon=22,
+            lat=8,
+        )
+        result.append(_part(
+            f"nostril-{'l' if side < 0 else 'r'}",
+            "nostril",
+            opening_positions,
+            opening_triangles,
+        ))
+
+    col_y = _face_depth_y(0, 1.468, p) - .0014 * p.nose_projection
+    col_positions, col_triangles = _uv_ellipsoid(
+        _to_gltf(0, col_y, 1.468),
+        (.0038*nw, .0060, .0028*p.nose_projection),
+        lon=24,
+        lat=10,
+    )
+    result.append(_part(
+        "nose-columella",
+        "skin_detail",
+        col_positions,
+        col_triangles,
+    ))
+    return result
+
+
+def build_ears(controls: dict[str, Any]) -> list[dict[str, Any]]:
+    p = parameters_from_controls(controls)
+    result = []
+    for side in (-1, 1):
+        x = side * .091 * p.head_width
+        outer_center = _to_gltf(x, .010*p.head_depth, 1.525)
+        outer_positions, outer_triangles = _uv_ellipsoid(
+            outer_center,
+            (.0125*p.head_width, .029, .0125*p.head_depth),
+            lon=30,
+            lat=14,
+        )
+        result.append(_part(
+            f"ear-{'l' if side < 0 else 'r'}",
+            "skin",
+            outer_positions,
+            outer_triangles,
+        ))
+        inner_center = _to_gltf(
+            side * .094 * p.head_width,
+            .002*p.head_depth,
+            1.525,
+        )
+        inner_positions, inner_triangles = _uv_ellipsoid(
+            inner_center,
+            (.0060*p.head_width, .018, .0040*p.head_depth),
+            lon=24,
+            lat=10,
+        )
+        result.append(_part(
+            f"ear-inner-{'l' if side < 0 else 'r'}",
+            "skin_detail",
+            inner_positions,
+            inner_triangles,
+        ))
+    return result
+
+
+def _eye_lid_point(
+    p: FaceParameters,
+    side: int,
+    u: float,
+    upper: bool,
+) -> tuple[float, float, float]:
+    cx = side * .035 * p.eye_spacing * p.head_width
+    half_w = .0275 * p.eye_size * p.head_width
+    x = cx + u * half_w
+    arch = max(0.0, 1 - u*u) ** .70
+    z = 1.526 + (.0105 if upper else -.0072) * p.eye_size * arch
+    donor_y = _face_depth_y(x, z, p) - .0050 * p.head_depth
+    return x, donor_y, z
 
 
 def build_eyes(controls: dict[str, Any]) -> list[dict[str, Any]]:
     p = parameters_from_controls(controls)
     result = []
-    eye_x = .035 * p.eye_spacing * p.head_width
-    eye_y = .013
-    forward = .057 * p.head_depth
-    size = p.eye_size
-    for side, x in (("L", -eye_x), ("R", eye_x)):
-        sclera_positions, sclera_triangles = _uv_ellipsoid(
-            (x, eye_y, forward),
-            (.024 * size * p.head_width, .021 * size, .021 * size * p.head_depth),
-        )
-        result.append({
-            "schema": FACE_MESH_SCHEMA,
-            "part": f"eye-{side.lower()}-sclera",
-            "material_role": "sclera",
-            "positions": sclera_positions,
-            "triangles": sclera_triangles,
-        })
-        iris_positions, iris_triangles = _uv_ellipsoid(
-            (x, eye_y, forward + .0205 * size * p.head_depth),
-            (.0092 * size, .0092 * size, .0012),
-            lon=32,
-            lat=8,
-        )
-        result.append({
-            "schema": FACE_MESH_SCHEMA,
-            "part": f"eye-{side.lower()}-iris",
-            "material_role": "iris",
-            "positions": iris_positions,
-            "triangles": iris_triangles,
-        })
-        pupil_positions, pupil_triangles = _uv_ellipsoid(
-            (x, eye_y, forward + .0216 * size * p.head_depth),
-            (.0036 * size, .0036 * size, .0008),
-            lon=24,
-            lat=6,
-        )
-        result.append({
-            "schema": FACE_MESH_SCHEMA,
-            "part": f"eye-{side.lower()}-pupil",
-            "material_role": "pupil",
-            "positions": pupil_positions,
-            "triangles": pupil_triangles,
-        })
+    center_z = 1.526
+    for side in (-1, 1):
+        cx = side * .035 * p.eye_spacing * p.head_width
+        half_w = .0275 * p.eye_size * p.head_width
+
+        positions: list[tuple[float, float, float]] = []
+        triangles: list[tuple[int, int, int]] = []
+        horizontal = 48
+        vertical = 12
+        for i in range(horizontal + 1):
+            u = -1 + 2 * i / horizontal
+            arch = max(0.0, 1 - u*u) ** .70
+            lo = -.0072 * p.eye_size * arch
+            hi = .0105 * p.eye_size * arch
+            x = cx + u * half_w
+            for j in range(vertical + 1):
+                t = j / vertical
+                z = center_z + lo + (hi-lo)*t
+                donor_y = (
+                    _face_depth_y(x, z, p)
+                    - .0053 * p.head_depth
+                    + .0011 * (2*t - 1) ** 2
+                )
+                positions.append(_to_gltf(x, donor_y, z))
+        stride = vertical + 1
+        for i in range(horizontal):
+            for j in range(vertical):
+                a = i * stride + j
+                b = (i + 1) * stride + j
+                c = (i + 1) * stride + j + 1
+                d = i * stride + j + 1
+                triangles.extend(_triangulate_quad(a, b, c, d))
+        result.append(_part(
+            f"eye-{'l' if side < 0 else 'r'}-sclera",
+            "sclera",
+            positions,
+            triangles,
+        ))
+
+        eye_front = _face_depth_y(cx, center_z, p) - .0066 * p.head_depth
+        iris_radius = .0090 * p.eye_size
+        result.append(_donor_disc(
+            f"eye-{'l' if side < 0 else 'r'}-limbal",
+            "limbal",
+            (cx, eye_front - .0005, center_z),
+            iris_radius * 1.08,
+            inner_radius=iris_radius * .88,
+            segments=64,
+        ))
+        result.append(_donor_disc(
+            f"eye-{'l' if side < 0 else 'r'}-iris",
+            "iris",
+            (cx, eye_front - .0008, center_z),
+            iris_radius * .88,
+            segments=64,
+        ))
+        result.append(_donor_disc(
+            f"eye-{'l' if side < 0 else 'r'}-pupil",
+            "pupil",
+            (cx, eye_front - .00115, center_z),
+            .00345 * p.eye_size,
+            segments=48,
+        ))
+        result.append(_donor_disc(
+            f"eye-{'l' if side < 0 else 'r'}-catchlight",
+            "catchlight",
+            (
+                cx - .0030 * p.eye_size,
+                eye_front - .00145,
+                center_z + .0038 * p.eye_size,
+            ),
+            .00155 * p.eye_size,
+            segments=24,
+        ))
+
+        for upper in (True, False):
+            lid_points = [
+                _eye_lid_point(p, side, -1 + 2*i/40, upper)
+                for i in range(41)
+            ]
+            result.append(_donor_ribbon(
+                f"eye-{'l' if side < 0 else 'r'}-{'upper' if upper else 'lower'}-lid",
+                "eyelid",
+                lid_points,
+                .00165 if upper else .0012,
+            ))
+            if upper:
+                lash_points = [
+                    (x, y - .00085, z + .00025)
+                    for x, y, z in lid_points[5:-5]
+                ]
+                result.append(_donor_ribbon(
+                    f"eye-{'l' if side < 0 else 'r'}-lashline",
+                    "brow",
+                    lash_points,
+                    .00075,
+                ))
+
+        brow_points = []
+        for i in range(29):
+            u = -1 + 2*i/28
+            x = cx + u * .029 * p.head_width
+            z = 1.558 + .0055 * (1-u*u) + side*u*.0012
+            donor_y = _face_depth_y(x, z, p) - .0018
+            brow_points.append((x, donor_y, z))
+        result.append(_donor_ribbon(
+            f"brow-{'l' if side < 0 else 'r'}",
+            "brow",
+            brow_points,
+            .00215,
+        ))
     return result
 
 
 def build_face_parts(controls: dict[str, Any]) -> list[dict[str, Any]]:
-    return [build_face_surface(controls), *build_lips(controls), *build_eyes(controls)]
+    return [
+        build_face_surface(controls),
+        *build_ears(controls),
+        *build_lips(controls),
+        *build_mouth_details(controls),
+        *build_nose_details(controls),
+        *build_eyes(controls),
+    ]
 
 
 def bounds(parts: Iterable[dict[str, Any]]) -> dict[str, list[float]]:
@@ -356,16 +679,29 @@ def bounds(parts: Iterable[dict[str, Any]]) -> dict[str, list[float]]:
 def face_summary(controls: dict[str, Any]) -> dict[str, Any]:
     parts = build_face_parts(controls)
     return {
-        "schema": "axm.character.human-face-summary/v0.1",
+        "schema": "axm.character.human-face-summary/v0.2",
         "parts": len(parts),
         "vertices": sum(len(part["positions"]) for part in parts),
         "triangles": sum(len(part["triangles"]) for part in parts),
         "bounds_m": bounds(parts),
-        "topology_status": "STABLE_INDEX_LAYOUT_WITHIN_HUMAN_V0",
+        "topology_status": "STABLE_FACE_SHELL_INDEX_LAYOUT_WITHIN_HUMAN_V0",
+        "quality_floor": "AURA_REVISION_2_GEOMETRY_FEATURES_ADAPTED",
+        "features": [
+            "dense-profile face shell",
+            "dermal vertex variation",
+            "separate sculpted lips and mouth seam",
+            "nose ala/columella/recessed nostril detail",
+            "almond sclera surfaces",
+            "iris + limbal ring + pupil + catchlight",
+            "upper/lower eyelid rims and lashline",
+            "shaped brows",
+            "outer/inner ear forms",
+        ],
         "truth": (
             "Renderer-neutral deterministic face construction adapted from the exact "
-            "uploaded Aura revision 2 source; this is geometry evidence, not yet a "
-            "target-engine-approved full-body game asset."
+            "uploaded Aura revision 2 source. This deliberately raises human-v0's "
+            "default face construction toward the proven Aura quality floor while "
+            "keeping the reusable character/GLB contract separate."
         ),
     }
 
