@@ -351,13 +351,16 @@ def _translate_part(
     joint: str,
 ) -> dict[str, Any]:
     ox,oy,oz=offset
-    return {
+    result = {
         "id":part["part"],
         "positions":[(ox+x*scale,oy+y*scale,oz+z*scale) for x,y,z in part["positions"]],
         "triangles":list(part["triangles"]),
         "weights":[{joint:1.0} for _ in part["positions"]],
         "material_role":part["material_role"],
     }
+    if "colors" in part:
+        result["colors"] = [tuple(row) for row in part["colors"]]
+    return result
 
 
 def build_parts(controls: dict[str, Any]) -> list[dict[str, Any]]:
@@ -663,30 +666,57 @@ class _BufferBuilder:
 def _material_table(
     controls: dict[str, Any],
 ) -> tuple[list[dict[str, Any]], dict[str,int]]:
-    roles={
-        "skin":(_hex_rgb(controls.get("skin"),"#c98f76"),.0,.48),
-        "lip":((.55,.19,.18,1),.0,.38),
-        "sclera":((.94,.96,.94,1),.0,.28),
-        "iris":(_hex_rgb(controls.get("eyes"),"#5b3828"),.05,.25),
-        "pupil":((.015,.012,.010,1),.0,.18),
-        "hair":(_hex_rgb(controls.get("hair_color"),"#34221f"),.0,.52),
-        "top":((.20,.32,.34,1),.0,.62),
-        "bottom":((.12,.16,.18,1),.0,.68),
-        "shoes":((.06,.06,.055,1),.05,.58),
+    skin_color=_hex_rgb(controls.get("skin"),"#c98f76")
+    hair_color=_hex_rgb(controls.get("hair_color"),"#34221f")
+
+    def tint(color, factors):
+        return tuple(
+            max(0.0,min(1.0,color[i]*factors[i]))
+            for i in range(3)
+        )+(color[3],)
+
+    specs={
+        "skin":{"color":skin_color,"metal":0.0,"rough":.46},
+        "skin_detail":{"color":tint(skin_color,(.94,.90,.88)),"metal":0.0,"rough":.43},
+        "eyelid":{"color":tint(skin_color,(.97,.91,.90)),"metal":0.0,"rough":.40},
+        "lip":{"color":tint(skin_color,(.86,.48,.48)),"metal":0.0,"rough":.32},
+        "mouth_seam":{"color":(.16,.035,.030,1), "metal":0.0,"rough":.36},
+        "nostril":{"color":(.035,.012,.010,1), "metal":0.0,"rough":.42},
+        "sclera":{"color":(.88,.92,.89,1), "metal":0.0,"rough":.20},
+        "iris":{"color":_hex_rgb(controls.get("eyes"),"#5b3828"),"metal":.03,"rough":.18},
+        "limbal":{"color":(.025,.018,.016,1), "metal":0.0,"rough":.18},
+        "pupil":{"color":(.008,.006,.005,1), "metal":0.0,"rough":.14},
+        "catchlight":{"color":(1.0,1.0,1.0,1), "metal":0.0,"rough":.06,"emissive":[.55,.55,.55]},
+        "brow":{"color":tint(hair_color,(.68,.58,.54)),"metal":0.0,"rough":.46},
+        "hair":{"color":hair_color,"metal":0.0,"rough":.40},
+        "top":{"color":(.20,.32,.34,1),"metal":0.0,"rough":.62},
+        "bottom":{"color":(.12,.16,.18,1),"metal":0.0,"rough":.68},
+        "shoes":{"color":(.06,.06,.055,1),"metal":.05,"rough":.58},
     }
     mats=[]
     index={}
-    for role,(color,metal,rough) in roles.items():
+    face_roles={
+        "skin","skin_detail","eyelid","lip","mouth_seam","nostril",
+        "sclera","iris","limbal","pupil","catchlight","brow","hair",
+    }
+    for role,spec in specs.items():
         index[role]=len(mats)
-        mats.append({
+        mat={
             "name":role,
             "pbrMetallicRoughness":{
-                "baseColorFactor":list(color),
-                "metallicFactor":metal,
-                "roughnessFactor":rough,
+                "baseColorFactor":list(spec["color"]),
+                "metallicFactor":spec["metal"],
+                "roughnessFactor":spec["rough"],
             },
             "doubleSided":False,
-        })
+            "extras":{
+                "axm_material_role":role,
+                "quality_source":"Aura revision 2 adaptation" if role in face_roles else "human-v0",
+            },
+        }
+        if spec.get("emissive") is not None:
+            mat["emissiveFactor"]=list(spec["emissive"])
+        mats.append(mat)
     return mats,index
 
 
@@ -728,6 +758,11 @@ def build_glb(blueprint: dict[str, Any]) -> tuple[bytes, dict[str, Any]]:
         norm_a=buf.accessor(norm,"VEC3",5126,target=34962)
         joint_a=buf.accessor(jr,"VEC4",5123,target=34962)
         weight_a=buf.accessor(wr,"VEC4",5126,target=34962)
+        color_a=None
+        if part.get("colors") is not None:
+            if len(part["colors"]) != len(pos):
+                raise HumanAssetError("vertex colors must match part positions")
+            color_a=buf.accessor(part["colors"],"VEC4",5126,target=34962)
         idx_a=buf.accessor(
             ([i] for t in tri for i in t),
             "SCALAR",
@@ -739,10 +774,13 @@ def build_glb(blueprint: dict[str, Any]) -> tuple[bytes, dict[str, Any]]:
             "name":part["id"],
             "primitives":[{
                 "attributes":{
-                    "POSITION":pos_a,
-                    "NORMAL":norm_a,
-                    "JOINTS_0":joint_a,
-                    "WEIGHTS_0":weight_a,
+                    **{
+                        "POSITION":pos_a,
+                        "NORMAL":norm_a,
+                        "JOINTS_0":joint_a,
+                        "WEIGHTS_0":weight_a,
+                    },
+                    **({"COLOR_0":color_a} if color_a is not None else {}),
                 },
                 "indices":idx_a,
                 "material":mat_index[part["material_role"]],
@@ -882,6 +920,7 @@ def build_glb(blueprint: dict[str, Any]) -> tuple[bytes, dict[str, Any]]:
         "equipment_slots":len(equipment["slots"]),
         "attachment_sockets":len(equipment["sockets"]),
         "socket_ids":[row["id"] for row in equipment["sockets"]],
+        "face_quality_floor":"AURA_REVISION_2_FEATURES_ADAPTED",
         "status":"STRUCTURAL_RIGGED_GLB_CANDIDATE",
         "target_engine_status":"HOLD_RPG_IMPORT_AND_VISUAL_DEFORMATION_REVIEW_NOT_YET_RUN",
         "truth":(
