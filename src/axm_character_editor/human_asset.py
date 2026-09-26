@@ -472,6 +472,66 @@ def _hair_strands(
     }
 
 
+def _aura_hair_shell(
+    controls: dict[str, Any],
+    metrics: BodyMetrics,
+    style: str,
+) -> dict[str, Any]:
+    """Aura-derived swept hair volume that keeps the face aperture clear."""
+    head_scale=_num(controls.get("head_scale"),1.0)*metrics.scale
+    head_width=_num(controls.get("head_width"),1.0)
+    head_depth=_num(controls.get("head_depth"),1.0)
+    radial=128
+    vertical=40
+    positions=[]
+    triangles=[]
+    weights=[]
+
+    def point(angle: float, t: float) -> tuple[float,float,float]:
+        front=max(0.0,math.sin(angle))
+        side=abs(math.cos(angle))
+        if style=="short":
+            end=1.28-.42*front**.45+.05*math.cos(angle)*front
+        elif style=="swept":
+            end=1.72-.67*front**.44+.08*math.cos(angle)*front
+        elif style=="long":
+            end=2.48-1.38*front**.42+.08*math.cos(angle)*front+.20*side
+        else:
+            end=2.18-1.24*front**.42+.08*math.cos(angle)*front
+        phase=.045+(end-.045)*t
+        wave=.0016*math.sin(t*math.pi*2.1+angle*3)*t*t
+        donor_x=(.101+wave)*math.sin(phase)*math.cos(angle)*head_width
+        donor_y=.004-(.118*head_depth+wave)*math.sin(phase)*math.sin(angle)
+        donor_z=1.532+.127*math.cos(phase)
+        local=(donor_x,donor_z-1.513,-donor_y)
+        return (
+            local[0]*head_scale,
+            metrics.head_y+local[1]*head_scale,
+            local[2]*head_scale,
+        )
+
+    for j in range(vertical+1):
+        t=j/vertical
+        for i in range(radial):
+            a=math.tau*i/radial
+            positions.append(point(a,t))
+            weights.append({"Head":1.0})
+    for j in range(vertical):
+        for i in range(radial):
+            a=j*radial+i
+            b=j*radial+(i+1)%radial
+            c=(j+1)*radial+(i+1)%radial
+            d=(j+1)*radial+i
+            triangles.extend(_triangulate_quad(a,b,c,d))
+    return {
+        "id":"hair-aura-shell",
+        "positions":positions,
+        "triangles":triangles,
+        "weights":_normalize_weights(weights),
+        "material_role":"hair",
+    }
+
+
 def build_parts(controls: dict[str, Any]) -> list[dict[str, Any]]:
     m=body_metrics(controls)
     build=m.build
@@ -604,63 +664,49 @@ def build_parts(controls: dict[str, Any]) -> list[dict[str, Any]]:
 
     hair=controls.get("hair","short")
     if hair != "none":
-        head_width=_num(controls.get("head_width"),1.0)
-        head_depth=_num(controls.get("head_depth"),1.0)
-        hw=.101*head_width*head_scale
-        hh=.138*head_scale
-        hd=.104*head_depth*head_scale
-        cy=m.head_y+.018*head_scale
-        parts.append(_hair_shell(
-            "hair-cap",
-            (0,cy,-.006*head_scale),
-            (hw,hh,hd),
-            style=hair,
-        ))
-        parts.append(_hair_strands(
-            "hair-strands",
-            (0,cy,-.006*head_scale),
-            (hw,hh,hd),
-            style=hair,
-        ))
-
-        if hair=="swept":
-            parts.append(_ellipsoid(
-                "hair-swept-fringe",
-                (-.032*head_scale,m.head_y+.080*head_scale,.070*head_scale),
-                (.050*head_scale,.022*head_scale,.016*head_scale),
-                {"Head":1},
-                "hair",
-                lon=30,
-                lat=8,
-            ))
-
-        if hair in ("bob","long"):
-            top_y=m.head_y+.020*head_scale
-            bottom_y=(
-                m.head_y-.105*head_scale
-                if hair=="bob"
-                else m.head_y-.245*head_scale
-            )
-            side_h=(top_y-bottom_y)*.54
-            side_y=(top_y+bottom_y)*.5
-            for suffix,sign in (("L",-1),("R",1)):
-                parts.append(_ellipsoid(
-                    f"hair-side-{suffix.lower()}",
-                    (
-                        sign*.091*head_width*head_scale,
-                        side_y,
-                        -.022*head_depth*head_scale,
-                    ),
-                    (
-                        .015*head_scale,
-                        side_h,
-                        .030*head_depth*head_scale,
-                    ),
-                    {"Head":1},
-                    "hair",
-                    lon=26,
-                    lat=12,
-                ))
+        parts.append(_aura_hair_shell(controls,m,hair))
+        if hair in ("swept","bob","long"):
+            head_scale=_num(controls.get("head_scale"),1.0)*m.scale
+            fringe=[]
+            weights=[]
+            triangles=[]
+            rows=7
+            cols=32
+            anchors=[
+                (.026,.010,.145),
+                (.012,.050,.132),
+                (-.018,.093,.102),
+                (-.052,.096,.060),
+                (-.078,.073,.018),
+                (-.087,.038,-.028),
+            ]
+            for r in range(rows):
+                shift=(r-(rows-1)/2)*.0045
+                for c in range(cols):
+                    u=c/(cols-1)*(len(anchors)-1)
+                    k=min(len(anchors)-2,int(u))
+                    t=u-k
+                    a=anchors[k]
+                    b=anchors[k+1]
+                    x=(a[0]+(b[0]-a[0])*t+shift)*head_scale
+                    y=m.head_y+(a[2]+(b[2]-a[2])*t)*head_scale
+                    z=(a[1]+(b[1]-a[1])*t)*head_scale
+                    fringe.append((x,y,z))
+                    weights.append({"Head":1.0})
+            for r in range(rows-1):
+                for c in range(cols-1):
+                    a=r*cols+c
+                    b=a+1
+                    d=(r+1)*cols+c
+                    cc=d+1
+                    triangles.extend(_triangulate_quad(a,b,cc,d))
+            parts.append({
+                "id":"hair-swept-fringe",
+                "positions":fringe,
+                "triangles":triangles,
+                "weights":_normalize_weights(weights),
+                "material_role":"hair",
+            })
     return parts
 
 
