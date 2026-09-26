@@ -1,6 +1,6 @@
 /* Actual-browser acceptance for the local editor. CI-only dev dependency: Playwright. */
 const {chromium}=require('playwright');
-const {spawn}=require('node:child_process');
+const {spawn,execFileSync}=require('node:child_process');
 const fs=require('node:fs/promises');
 const assert=require('node:assert/strict');
 const crypto=require('node:crypto');
@@ -65,6 +65,7 @@ let browser;
  const identity=await page.locator('#modelIdentity').textContent();assert.equal(identity,'GLB '+hash(glb).slice(0,12));
  download=page.waitForEvent('download',{timeout:90000});await page.getByRole('button',{name:'Export game package'}).click();saved=await download;
  const zip=await fs.readFile(await saved.path());assert.equal(zip.toString('utf8',0,2),'PK');assert.ok(zip.length>10000);
+ execFileSync('python',['-c',"import hashlib,json,sys,zipfile; z=zipfile.ZipFile(sys.argv[1]); assert hashlib.sha256(z.read('character.glb')).hexdigest()==sys.argv[2]; assert json.loads(z.read('deformation-verification.json'))['status']=='SOFTWARE_DEFORMATION_PASS'; assert 'equipment-contract.json' in z.namelist(); assert json.loads(z.read('character.blueprint.json'))['authorship']['provenance']['source']=='browser-smoke'",await saved.path(),hash(glb)]);
  await page.setViewportSize({width:390,height:844});await page.locator('.stage').scrollIntoViewIfNeeded();await shot('mobile-editor');
  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
  assert.deepEqual(errors,[]);

@@ -569,7 +569,7 @@ def build_parts(controls: dict[str, Any]) -> list[dict[str, Any]]:
     parts.append(_ellipsoid(
         "pelvis-bridge",
         (0,pelvis_y-.01*m.scale,0),
-        (m.hip_half*1.03,m.pelvis_h*.46,.128*build*m.scale),
+        (m.hip_half*.90,m.pelvis_h*.46,.100*build*m.scale),
         {"Pelvis":1},
         "bottom",
         lon=32,lat=12,
@@ -820,7 +820,7 @@ def starter_clips() -> list[dict[str, Any]]:
         arm_track("UpperArm.R",-78,16),
     ]
 
-    right_wave = _compose(_quat((0,0,1),-28), _quat((0,1,0),-12))
+    right_wave = _compose(_quat((0,0,1),28), _quat((0,1,0),-12))
     wave={"name":"Wave","tracks":[
         {"joint":"UpperArm.L","path":"rotation","times":[0,.35,.8,1.25,1.6],"values":[
             left_down,left_down,left_down,left_down,left_down
@@ -830,10 +830,10 @@ def starter_clips() -> list[dict[str, Any]]:
         ]},
         {"joint":"Forearm.R","path":"rotation","times":[0,.35,.65,.95,1.25,1.6],"values":[
             _quat((0,1,0),0),
-            _quat((0,1,0),-58),
-            _quat((0,1,0),-35),
-            _quat((0,1,0),-70),
-            _quat((0,1,0),-58),
+            _quat((0,0,1),58),
+            _quat((0,0,1),35),
+            _quat((0,0,1),70),
+            _quat((0,0,1),58),
             _quat((0,1,0),0),
         ]},
     ]}

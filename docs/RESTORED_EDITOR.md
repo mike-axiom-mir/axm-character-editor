@@ -50,6 +50,9 @@ change restores their strongest available construction; it does not make them
 finished production characters. Target-engine import, clothing fit, facial
 animation, UV/textures and runtime performance still require evidence.
 
+Rendered review also corrected an intersecting waist bridge and the Wave clip's
+arm/elbow axes so its hand actually rises above the head.
+
 The inherited SVG observation sheet is a coarse software review surface and
 samples triangles; it is not the full-detail viewport or a visual acceptance gate.
 The browser smoke job exercises the running app, downloads actual GLB/ZIP outputs,

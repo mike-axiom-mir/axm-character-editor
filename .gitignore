@@ -3,3 +3,7 @@ __pycache__/
 .venv/
 dist/*
 !dist/character-editor.html
+
+build/
+*.egg-info/
+node_modules/
