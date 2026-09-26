@@ -324,7 +324,9 @@ def build_face_surface(
             b = j * radial_segments + (i + 1) % radial_segments
             c = (j + 1) * radial_segments + (i + 1) % radial_segments
             d = (j + 1) * radial_segments + i
-            indices.extend(_triangulate_quad(a, b, c, d))
+            # The donor profile is authored outside-in relative to this grid.
+            # Reverse the face-shell winding so exported normals point outward.
+            indices.extend(tuple(reversed(tri)) for tri in _triangulate_quad(a, b, c, d))
     return _part(
         "face-shell",
         "skin",
