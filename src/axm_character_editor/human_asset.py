@@ -750,12 +750,38 @@ def build_parts(controls: dict[str, Any]) -> list[dict[str, Any]]:
                 lat=7,
             ))
 
-        thumb_base=wrist+m.hand_len*.16
-        thumb_tip=wrist+m.hand_len*.34
-        parts.append(_ellipsoid(
+        # Give the thumb a real tapered axis instead of two overlapping blobs.
+        # It stays entirely on the existing Hand joint, so the 18-joint rig and
+        # Idle/Walk/Wave animation contract remain unchanged. A small thenar pad
+        # keeps the root continuous with the palm while the centerline angles
+        # outward and down toward a narrower distal tip.
+        thumb_root=wrist+m.hand_len*.10
+        thumb_end=wrist+m.hand_len*.42
+        thumb_span=thumb_end-thumb_root
+        thumb_part=_tube_x(
             f"thumb-{suffix.lower()}",
-            (sign*thumb_base,shoulder_y-.026*m.scale,.054*m.scale),
-            (m.hand_len*.15,hand_r*.40,hand_r*.48),
+            [
+                (sign*thumb_root,shoulder_y-.014*m.scale,hand_r*.42,hand_r*.48,{ha:1}),
+                (sign*(thumb_root+thumb_span*.34),shoulder_y-.022*m.scale,hand_r*.37,hand_r*.42,{ha:1}),
+                (sign*(thumb_root+thumb_span*.68),shoulder_y-.030*m.scale,hand_r*.30,hand_r*.35,{ha:1}),
+                (sign*thumb_end,shoulder_y-.034*m.scale,hand_r*.23,hand_r*.28,{ha:1}),
+            ],
+            material_role="skin",
+            segments=18,
+        )
+        thumb_z0=.040*m.scale
+        thumb_z1=.078*m.scale
+        warped=[]
+        for x,y,z0 in thumb_part["positions"]:
+            along=(abs(x)-thumb_root)/thumb_span
+            along=max(0.0,min(1.0,along))
+            warped.append((x,y,z0+thumb_z0+(thumb_z1-thumb_z0)*along))
+        thumb_part["positions"]=warped
+        parts.append(thumb_part)
+        parts.append(_ellipsoid(
+            f"thenar-pad-{suffix.lower()}",
+            (sign*(wrist+m.hand_len*.20),shoulder_y-.014*m.scale,.038*m.scale),
+            (m.hand_len*.14,hand_r*.38,hand_r*.46),
             {ha:1},
             "skin",
             lon=20,
@@ -763,8 +789,8 @@ def build_parts(controls: dict[str, Any]) -> list[dict[str, Any]]:
         ))
         parts.append(_ellipsoid(
             f"thumb-tip-{suffix.lower()}",
-            (sign*thumb_tip,shoulder_y-.032*m.scale,.069*m.scale),
-            (m.hand_len*.105,hand_r*.29,hand_r*.34),
+            (sign*(thumb_end+m.hand_len*.022),shoulder_y-.036*m.scale,.081*m.scale),
+            (m.hand_len*.040,hand_r*.22,hand_r*.26),
             {ha:1},
             "skin",
             lon=18,
