@@ -60,6 +60,31 @@ class HumanFaceTests(unittest.TestCase):
         )
         self.assertIn("upper/lower eyelid rims and lashline", summary["features"])
 
+    def test_face_shell_winding_is_outward(self):
+        shell = build_face_surface(self.controls("female-a"))
+        points = shell["positions"]
+        positive = 0
+        checked = 0
+        for a, b, c in shell["triangles"][::257]:
+            pa, pb, pc = points[a], points[b], points[c]
+            u = [pb[i] - pa[i] for i in range(3)]
+            v = [pc[i] - pa[i] for i in range(3)]
+            normal = [
+                u[1]*v[2] - u[2]*v[1],
+                u[2]*v[0] - u[0]*v[2],
+                u[0]*v[1] - u[1]*v[0],
+            ]
+            center = [
+                (pa[i] + pb[i] + pc[i]) / 3
+                for i in range(3)
+            ]
+            # human_face local coordinates are centered close to [0,0,0]
+            if sum(normal[i] * center[i] for i in range(3)) > 0:
+                positive += 1
+            checked += 1
+        self.assertGreater(checked, 20)
+        self.assertGreater(positive / checked, .95)
+
     def test_quality_parts_are_present(self):
         parts = {part["part"]: part for part in build_face_parts(self.controls("female-a"))}
         required = {
