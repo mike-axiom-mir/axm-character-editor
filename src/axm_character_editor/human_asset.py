@@ -752,6 +752,7 @@ def _material_table(
 
     specs={
         "skin":{"color":skin_color,"metal":0.0,"rough":.46},
+        "face_skin":{"color":(1.0,1.0,1.0,1.0),"metal":0.0,"rough":.44},
         "skin_detail":{"color":tint(skin_color,(.94,.90,.88)),"metal":0.0,"rough":.43},
         "eyelid":{"color":tint(skin_color,(.97,.91,.90)),"metal":0.0,"rough":.40},
         "lip":{"color":tint(skin_color,(.86,.48,.48)),"metal":0.0,"rough":.32},
@@ -771,7 +772,7 @@ def _material_table(
     mats=[]
     index={}
     face_roles={
-        "skin","skin_detail","eyelid","lip","mouth_seam","nostril",
+        "skin","face_skin","skin_detail","eyelid","lip","mouth_seam","nostril",
         "sclera","iris","limbal","pupil","catchlight","brow","hair",
     }
     for role,spec in specs.items():
