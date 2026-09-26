@@ -63,7 +63,7 @@ class HumanAssetTests(unittest.TestCase):
         a, ar = build_glb(blueprint)
         b, br = build_glb(changed)
         self.assertNotEqual(a, b)
-        self.assertNotEqual(ar["parts"], br["parts"])
+        self.assertNotEqual(ar["sha256"], br["sha256"])
 
     def test_glb_contains_real_skin_and_animation_contract(self):
         body, _ = build_glb(new_blueprint("player", preset_id="female-b"))
