@@ -598,7 +598,7 @@ def build_eyes(controls: dict[str, Any]) -> list[dict[str, Any]]:
         result.append(_donor_disc(
             f"eye-{'l' if side < 0 else 'r'}-limbal",
             "limbal",
-            (cx, eye_front - .0005, center_z),
+            (cx, eye_front - .0008, center_z),
             iris_radius * 1.08,
             inner_radius=iris_radius * .88,
             segments=64,
@@ -606,14 +606,14 @@ def build_eyes(controls: dict[str, Any]) -> list[dict[str, Any]]:
         result.append(_donor_disc(
             f"eye-{'l' if side < 0 else 'r'}-iris",
             "iris",
-            (cx, eye_front - .0008, center_z),
+            (cx, eye_front - .0016, center_z),
             iris_radius * .88,
             segments=64,
         ))
         result.append(_donor_disc(
             f"eye-{'l' if side < 0 else 'r'}-pupil",
             "pupil",
-            (cx, eye_front - .00115, center_z),
+            (cx, eye_front - .0024, center_z),
             .00345 * p.eye_size,
             segments=48,
         ))
@@ -622,7 +622,7 @@ def build_eyes(controls: dict[str, Any]) -> list[dict[str, Any]]:
             "catchlight",
             (
                 cx - .0030 * p.eye_size,
-                eye_front - .00145,
+                eye_front - .0032,
                 center_z + .0038 * p.eye_size,
             ),
             .00155 * p.eye_size,
