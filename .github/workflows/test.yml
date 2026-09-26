@@ -10,8 +10,6 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -19,19 +17,3 @@ jobs:
       - run: python -m unittest discover -s tests -v
       - run: python tools/build_editor.py --out /tmp/character-editor.html
       - run: test -s /tmp/character-editor.html
-      - name: Build Aura quality-floor sample
-        run: |
-          axm-character new aura-quality-sample --preset female-a --out /tmp/aura-quality-sample.json
-          axm-character build /tmp/aura-quality-sample.json /tmp/aura-quality-character
-          axm-character face-proof /tmp/aura-quality-sample.json --out /tmp/aura-quality-face.obj
-          git archive --format=zip --output=/tmp/aura-face-quality-floor-source.zip HEAD
-      - name: Upload temporary visual-inspection bundle
-        uses: actions/upload-artifact@v4
-        with:
-          name: aura-face-quality-floor-inspection
-          path: |
-            /tmp/aura-quality-sample.json
-            /tmp/aura-quality-character
-            /tmp/aura-quality-face.obj
-            /tmp/aura-face-quality-floor-source.zip
-          retention-days: 1
