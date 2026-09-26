@@ -766,6 +766,15 @@ def build_parts(controls: dict[str, Any]) -> list[dict[str, Any]]:
             (ankle_y+m.lower_leg*.28,leg_r*.67,leg_r*.70,{sh:.82,ft:.18}),
             (ankle_y,leg_r*.52,leg_r*.58,{sh:.34,ft:.66}),
         ],material_role=lower_leg_role,segments=30))
+        # Carry the lower-leg silhouette slightly through the ankle joint instead
+        # of ending it at a hard ring. This keeps the existing Shin/Foot rig while
+        # giving footwear a continuous calf -> ankle -> foot transition.
+        parts.append(_tube_y(f"ankle-bridge-{suffix.lower()}",x,[
+            (ankle_y+.050*m.scale,leg_r*.60,leg_r*.64,{sh:.82,ft:.18}),
+            (ankle_y+.020*m.scale,leg_r*.55,leg_r*.60,{sh:.62,ft:.38}),
+            (ankle_y,leg_r*.52,leg_r*.58,{sh:.38,ft:.62}),
+            (ankle_y-.014*m.scale,leg_r*.50,leg_r*.56,{sh:.14,ft:.86}),
+        ],material_role=lower_leg_role,segments=28))
         # Human-v0 footwear used to be two overlapping ellipsoids, which read as
         # a rounded block from side and 3/4 views.  Keep the same Foot joint and
         # material contract, but give the shoe a heel -> arch -> ball profile,
