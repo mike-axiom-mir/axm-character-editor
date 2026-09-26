@@ -55,6 +55,8 @@ def main() -> None:
     )
     build.add_argument("blueprint")
     build.add_argument("output_dir")
+    build.add_argument("--buffer-backend", choices=("builtin", "form-engine"), default="builtin",
+                       help="Explicit binary buffer provider; form-engine must be installed separately")
 
     verify = commands.add_parser(
         "verify-glb",
@@ -110,7 +112,7 @@ def main() -> None:
             path = write_face_obj(blueprint["controls"], Path(args.out))
             _dump({"path": str(path), **face_summary(blueprint["controls"])})
         elif args.command == "build":
-            _dump(build_package(load_blueprint(args.blueprint), Path(args.output_dir)))
+            _dump(build_package(load_blueprint(args.blueprint), Path(args.output_dir), buffer_backend=args.buffer_backend))
         elif args.command == "verify-glb":
             _dump(verify_glb_path(Path(args.glb)))
         elif args.command == "verify-deformation":

@@ -94,6 +94,24 @@ A separate face geometry proof can also be exported:
 axm-character face-proof player.character.json --out face.obj
 ~~~
 
+## Optional shared Form Engine buffer writer
+
+The first shared creation component can now be selected explicitly:
+
+```bash
+python -m pip install -e /path/to/axm-form-engine
+axm-character build player.character.json build/shared-player --buffer-backend form-engine
+```
+
+This uses `axm.form.gltf-buffer/v0.1` for binary accessor packing. Character
+Editor keeps the Blueprint, geometry, materials, rig, sockets, animations and
+GLB scene assembly. The default remains `builtin`, including the browser studio.
+A missing requested provider raises an error; it does not silently fall back.
+
+Both providers are checked for byte-identical GLBs. Form Engine's identity is
+recorded in `build-receipt.json` and `source-lock.json`, outside the asset bytes.
+See [the integration boundary](docs/FORM_ENGINE_ADAPTER.md).
+
 ## Equipment slots and sockets
 
 Every human-v0 GLB now carries a default semantic equipment interface. Garments
