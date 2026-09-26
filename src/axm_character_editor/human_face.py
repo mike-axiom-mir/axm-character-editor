@@ -76,6 +76,16 @@ def _interp_profile(z: float, column: int) -> float:
     return profile[0 if z < profile[0][0] else -1][column]
 
 
+def _skin_rgb(controls: dict[str, Any]) -> tuple[float, float, float]:
+    value = controls.get("skin", "#c98f76")
+    if not isinstance(value, str) or len(value) != 7 or not value.startswith("#"):
+        value = "#c98f76"
+    try:
+        return tuple(int(value[i:i+2], 16) / 255 for i in (1, 3, 5))
+    except ValueError:
+        return (201/255, 143/255, 118/255)
+
+
 def _finite_number(value: Any, label: str) -> float:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise HumanFaceError(f"{label} must be numeric")
@@ -284,6 +294,7 @@ def build_face_surface(
     if vertical_segments < 24 or vertical_segments > 440:
         raise HumanFaceError("vertical_segments must be from 24 through 440")
     p = parameters_from_controls(controls)
+    skin_rgb = _skin_rgb(controls)
     positions: list[tuple[float, float, float]] = []
     colors: list[tuple[float, float, float, float]] = []
     indices: list[tuple[int, int, int]] = []
@@ -312,9 +323,9 @@ def build_face_surface(
                 + _gauss(x, .035 * p.eye_spacing * p.head_width, .023 * p.head_width)
             ) * _gauss(donor_z, 1.505, .012) * front
             colors.append((
-                1.0,
-                max(.82, 1.0 - .055 * blush - .018 * under_eye),
-                max(.80, 1.0 - .040 * blush - .010 * under_eye),
+                min(1.0, skin_rgb[0] * (1.0 + .035 * blush)),
+                max(0.0, skin_rgb[1] * (1.0 - .050 * blush - .015 * under_eye)),
+                max(0.0, skin_rgb[2] * (1.0 - .035 * blush - .008 * under_eye)),
                 1.0,
             ))
 
@@ -329,7 +340,7 @@ def build_face_surface(
             indices.extend(tuple(reversed(tri)) for tri in _triangulate_quad(a, b, c, d))
     return _part(
         "face-shell",
-        "skin",
+        "face_skin",
         positions,
         indices,
         colors=colors,
