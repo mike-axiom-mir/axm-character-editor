@@ -50,7 +50,42 @@ class HumanFaceTests(unittest.TestCase):
         summary = face_summary(self.controls("female-a"))
         self.assertGreater(summary["vertices"], 10000)
         self.assertGreater(summary["triangles"], 20000)
-        self.assertEqual(summary["topology_status"], "STABLE_INDEX_LAYOUT_WITHIN_HUMAN_V0")
+        self.assertEqual(
+            summary["topology_status"],
+            "STABLE_FACE_SHELL_INDEX_LAYOUT_WITHIN_HUMAN_V0",
+        )
+        self.assertEqual(
+            summary["quality_floor"],
+            "AURA_REVISION_2_GEOMETRY_FEATURES_ADAPTED",
+        )
+        self.assertIn("upper/lower eyelid rims and lashline", summary["features"])
+
+    def test_quality_parts_are_present(self):
+        parts = {part["part"]: part for part in build_face_parts(self.controls("female-a"))}
+        required = {
+            "face-shell",
+            "upper-lip",
+            "lower-lip",
+            "mouth-seam",
+            "nostril-l",
+            "nostril-r",
+            "eye-l-sclera",
+            "eye-r-sclera",
+            "eye-l-limbal",
+            "eye-r-limbal",
+            "eye-l-upper-lid",
+            "eye-r-upper-lid",
+            "brow-l",
+            "brow-r",
+            "ear-l",
+            "ear-r",
+        }
+        self.assertTrue(required <= set(parts))
+        self.assertIn("colors", parts["face-shell"])
+        self.assertEqual(
+            len(parts["face-shell"]["colors"]),
+            len(parts["face-shell"]["positions"]),
+        )
 
     def test_obj_proof_is_written(self):
         with tempfile.TemporaryDirectory() as tmp:
