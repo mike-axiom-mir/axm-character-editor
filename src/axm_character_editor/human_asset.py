@@ -763,15 +763,15 @@ def build_parts(controls: dict[str, Any]) -> list[dict[str, Any]]:
         # a raised instep that meets the ankle, and a separately rounded toe.
         if shoes_choice=="boots":
             shoe_width=.078*m.scale
-            shoe_height=.064*m.scale
+            shoe_height=.036*m.scale
         elif shoes_choice=="shoes":
             shoe_width=.074*m.scale
-            shoe_height=.048*m.scale
+            shoe_height=.030*m.scale
         else:
             shoe_width=.070*m.scale
-            shoe_height=.034*m.scale
+            shoe_height=.018*m.scale
 
-        sole_y=m.foot_h*.32
+        sole_y=shoe_height*.95+.001*m.scale
         parts.append(_tube_z(
             f"foot-{suffix.lower()}",
             x,
