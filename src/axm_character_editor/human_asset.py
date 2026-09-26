@@ -625,19 +625,76 @@ def build_parts(controls: dict[str, Any]) -> list[dict[str, Any]]:
             (wx,shoulder_y,fore_r*.66,fore_r*.61,{fa:.32,ha:.68}),
         ],material_role="skin",segments=30))
         wrist=abs(wx)
+        palm_center=wrist+m.hand_len*.29
         parts.append(_ellipsoid(
             f"hand-{suffix.lower()}",
-            (sign*(wrist+m.hand_len*.28),shoulder_y,.015*m.scale),
-            (m.hand_len*.28,.040*m.scale,.058*m.scale),
+            (sign*palm_center,shoulder_y,.010*m.scale),
+            (m.hand_len*.30,hand_r*.83,hand_r*1.12),
             {ha:1},
             "skin",
-            lon=28,
-            lat=12,
+            lon=32,
+            lat=14,
         ))
+
+        finger_root=wrist+m.hand_len*.47
+        finger_specs=(("index",.88,-.58),("middle",.98,-.19),("ring",.93,.20),("little",.78,.58))
+        for finger,reach,z_lane in finger_specs:
+            tip=wrist+m.hand_len*reach
+            length=tip-finger_root
+            root_r=hand_r*(.245 if finger!="little" else .215)
+            tip_r=root_r*.58
+            z=z_lane*hand_r*1.38
+            finger_part=_tube_x(
+                f"finger-{finger}-{suffix.lower()}",
+                [
+                    (sign*finger_root,shoulder_y,root_r,root_r*.92,{ha:1}),
+                    (sign*(finger_root+length*.32),shoulder_y+.0015*m.scale,root_r*.94,root_r*.86,{ha:1}),
+                    (sign*(finger_root+length*.68),shoulder_y,root_r*.78,root_r*.72,{ha:1}),
+                    (sign*tip,shoulder_y-.001*m.scale,tip_r,tip_r*.90,{ha:1}),
+                ],
+                material_role="skin",
+                segments=18,
+            )
+            finger_part["positions"]=[(x,y,z0+z) for x,y,z0 in finger_part["positions"]]
+            parts.append(finger_part)
+            parts.append(_ellipsoid(
+                f"fingertip-{finger}-{suffix.lower()}",
+                (sign*(tip+m.hand_len*.018),shoulder_y-.001*m.scale,z),
+                (m.hand_len*.030,tip_r,tip_r*.94),
+                {ha:1},
+                "skin",
+                lon=16,
+                lat=8,
+            ))
+
+        knuckle_x=wrist+m.hand_len*.49
+        for idx,z_lane in enumerate((-.58,-.19,.20,.58),start=1):
+            z=z_lane*hand_r*1.38
+            parts.append(_ellipsoid(
+                f"knuckle-{idx}-{suffix.lower()}",
+                (sign*knuckle_x,shoulder_y+.022*m.scale,z),
+                (m.hand_len*.045,hand_r*.16,hand_r*.18),
+                {ha:1},
+                "skin",
+                lon=14,
+                lat=7,
+            ))
+
+        thumb_base=wrist+m.hand_len*.16
+        thumb_tip=wrist+m.hand_len*.34
         parts.append(_ellipsoid(
             f"thumb-{suffix.lower()}",
-            (sign*(wrist+m.hand_len*.13),shoulder_y-.020*m.scale,.050*m.scale),
-            (m.hand_len*.12,.018*m.scale,.022*m.scale),
+            (sign*thumb_base,shoulder_y-.026*m.scale,.054*m.scale),
+            (m.hand_len*.15,hand_r*.40,hand_r*.48),
+            {ha:1},
+            "skin",
+            lon=20,
+            lat=9,
+        ))
+        parts.append(_ellipsoid(
+            f"thumb-tip-{suffix.lower()}",
+            (sign*thumb_tip,shoulder_y-.032*m.scale,.069*m.scale),
+            (m.hand_len*.105,hand_r*.29,hand_r*.34),
             {ha:1},
             "skin",
             lon=18,
