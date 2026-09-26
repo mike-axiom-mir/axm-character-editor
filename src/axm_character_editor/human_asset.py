@@ -659,6 +659,13 @@ def build_parts(controls: dict[str, Any]) -> list[dict[str, Any]]:
             (sign*(m.shoulder_half+m.upper_arm*.72),shoulder_y,upper_r*.91,upper_r*.89,{ua:.78,fa:.22}),
             (ex,shoulder_y,fore_r*1.08,fore_r*1.04,{ua:.48,fa:.52}),
         ],material_role=upper_arm_role,segments=32))
+        # Smooth the elbow with a short blended profile around the existing joint.
+        parts.append(_tube_x(f"elbow-bridge-{suffix.lower()}",[
+            (sign*(abs(ex)-.032*m.scale),shoulder_y,fore_r*1.10,fore_r*1.06,{ua:.68,fa:.32}),
+            (sign*(abs(ex)-.010*m.scale),shoulder_y,fore_r*1.13,fore_r*1.09,{ua:.56,fa:.44}),
+            (sign*(abs(ex)+.012*m.scale),shoulder_y,fore_r*1.11,fore_r*1.08,{ua:.44,fa:.56}),
+            (sign*(abs(ex)+.036*m.scale),shoulder_y,fore_r*1.07,fore_r*1.04,{ua:.28,fa:.72}),
+        ],material_role=upper_arm_role,segments=30))
         parts.append(_tube_x(f"forearm-{suffix.lower()}",[
             (ex,shoulder_y,fore_r*1.05,fore_r*1.02,{ua:.24,fa:.76}),
             (sign*(m.shoulder_half+m.upper_arm+m.forearm*.35),shoulder_y,fore_r*1.01,fore_r*.98,{fa:.92,ha:.08}),
