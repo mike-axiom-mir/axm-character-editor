@@ -87,6 +87,23 @@ class HumanAssetTests(unittest.TestCase):
         self.assertIn("back.center", observed)
         self.assertIn("grip.R", observed)
 
+    def test_hair_shell_leaves_face_open(self):
+        from axm_character_editor.human_asset import body_metrics, build_parts
+        blueprint = new_blueprint("hair-open", preset_id="female-a")
+        controls = blueprint["controls"]
+        parts = {part["id"]: part for part in build_parts(controls)}
+        cap = parts["hair-cap"]
+        head_y = body_metrics(controls).head_y
+        central_front_low = [
+            p for p in cap["positions"]
+            if p[2] > .04 and abs(p[0]) < .05 and p[1] < head_y + .04
+        ]
+        self.assertEqual(
+            central_front_low,
+            [],
+            "hair shell must not cover the eyes/nose/mouth like the old full ellipsoid",
+        )
+
     def test_glb_carries_face_quality_materials_and_vertex_color(self):
         body, receipt = build_glb(new_blueprint("face-quality", preset_id="female-a"))
         doc, _ = parse_glb(body)
@@ -96,6 +113,7 @@ class HumanAssetTests(unittest.TestCase):
         )
         materials = {row["name"] for row in doc["materials"]}
         self.assertTrue({
+            "face_skin",
             "skin_detail",
             "eyelid",
             "mouth_seam",
