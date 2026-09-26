@@ -658,6 +658,15 @@ def build_parts(controls: dict[str, Any]) -> list[dict[str, Any]]:
             (wx,shoulder_y,fore_r*.66,fore_r*.61,{fa:.32,ha:.68}),
         ],material_role="skin",segments=30))
         wrist=abs(wx)
+        # The old detailed hand still met the forearm through the pinched pole of
+        # the palm ellipsoid. Add a short weighted bridge so the silhouette grows
+        # naturally from forearm -> wrist -> palm without changing the 18-joint rig.
+        parts.append(_tube_x(f"wrist-bridge-{suffix.lower()}",[
+            (sign*(wrist-m.hand_len*.035),shoulder_y,fore_r*.69,fore_r*.65,{fa:.55,ha:.45}),
+            (sign*wrist,shoulder_y,fore_r*.70,fore_r*.68,{fa:.35,ha:.65}),
+            (sign*(wrist+m.hand_len*.07),shoulder_y,hand_r*.72,hand_r*.82,{fa:.14,ha:.86}),
+            (sign*(wrist+m.hand_len*.13),shoulder_y,hand_r*.82,hand_r*.96,{ha:1}),
+        ],material_role="skin",segments=28))
         palm_center=wrist+m.hand_len*.29
         parts.append(_ellipsoid(
             f"hand-{suffix.lower()}",
