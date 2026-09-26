@@ -577,9 +577,17 @@ def build_parts(controls: dict[str, Any]) -> list[dict[str, Any]]:
     bottom_choice=controls.get("bottom","trousers")
     shoes_choice=controls.get("shoes","boots")
 
+    # Give the base top a deliberate hem -> hip -> waist -> chest contour.
+    # The old eight-ring loft jumped directly from pelvis to mid-spine, which
+    # made simple shirts (and the underlayer beneath tunics/jackets) read as a
+    # block from 3/4 and side views.
+    lower_torso_y=m.hip_y+m.pelvis_h*.12
+    waist_y=m.hip_y+m.pelvis_h+m.torso_h*.11
     core=_loft_y("body-core",[
         (m.hip_y-m.pelvis_h*.10,m.hip_half*.92,.108*build*m.scale,{"Pelvis":1}),
+        (lower_torso_y,m.hip_half*.98,.116*build*m.scale,{"Pelvis":1}),
         (pelvis_y,m.hip_half*1.04,.128*build*m.scale,{"Pelvis":1}),
+        (waist_y,.126*build*m.scale,.098*build*m.scale,{"Pelvis":.62,"Spine":.38}),
         (spine_y-.04*m.scale,.132*build*m.scale,.102*build*m.scale,{"Pelvis":.38,"Spine":.62}),
         (spine_y+.04*m.scale,.145*build*m.scale,.112*build*m.scale,{"Pelvis":.18,"Spine":.82}),
         (chest_y,m.shoulder_half*.72,.132*build*m.scale,{"Spine":.25,"Chest":.75}),
