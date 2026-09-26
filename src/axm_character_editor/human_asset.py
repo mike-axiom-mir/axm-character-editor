@@ -302,6 +302,39 @@ def _tube_y(
     }
 
 
+def _tube_z(
+    name: str,
+    x: float,
+    rings: list[tuple[float, float, float, float, dict[str, float]]],
+    *,
+    segments: int = 28,
+    material_role: str,
+) -> dict[str, Any]:
+    """Loft an elliptical profile along +Z for feet, shoes, and similar forms."""
+    positions=[]
+    triangles=[]
+    weights=[]
+    for z,y,rx,ry,row in rings:
+        for i in range(segments):
+            a=math.tau*i/segments
+            positions.append((x+rx*math.cos(a),y+ry*math.sin(a),z))
+            weights.append(dict(row))
+    for j in range(len(rings)-1):
+        for i in range(segments):
+            a=j*segments+i
+            b=j*segments+(i+1)%segments
+            c=(j+1)*segments+(i+1)%segments
+            d=(j+1)*segments+i
+            triangles.extend(_triangulate_quad(a,b,c,d))
+    return {
+        "id":name,
+        "positions":positions,
+        "triangles":triangles,
+        "weights":_normalize_weights(weights),
+        "material_role":material_role,
+    }
+
+
 def _ellipsoid(
     name: str,
     center: tuple[float,float,float],
@@ -724,25 +757,59 @@ def build_parts(controls: dict[str, Any]) -> list[dict[str, Any]]:
             (ankle_y+m.lower_leg*.28,leg_r*.67,leg_r*.70,{sh:.82,ft:.18}),
             (ankle_y,leg_r*.52,leg_r*.58,{sh:.34,ft:.66}),
         ],material_role=lower_leg_role,segments=30))
-        foot_y=m.foot_h*.52 if shoes_choice!="sandals" else m.foot_h*.38
-        foot_ry=m.foot_h*(.52 if shoes_choice=="boots" else .40 if shoes_choice=="shoes" else .25)
-        foot_rz=.130*m.scale if shoes_choice=="boots" else .118*m.scale if shoes_choice=="shoes" else .110*m.scale
-        parts.append(_ellipsoid(
+        # Human-v0 footwear used to be two overlapping ellipsoids, which read as
+        # a rounded block from side and 3/4 views.  Keep the same Foot joint and
+        # material contract, but give the shoe a heel -> arch -> ball profile,
+        # a raised instep that meets the ankle, and a separately rounded toe.
+        if shoes_choice=="boots":
+            shoe_width=.078*m.scale
+            shoe_height=.064*m.scale
+        elif shoes_choice=="shoes":
+            shoe_width=.074*m.scale
+            shoe_height=.048*m.scale
+        else:
+            shoe_width=.070*m.scale
+            shoe_height=.034*m.scale
+
+        sole_y=m.foot_h*.32
+        parts.append(_tube_z(
             f"foot-{suffix.lower()}",
-            (x,foot_y,.072*m.scale),
-            (.070*m.scale,foot_ry,foot_rz*.76),
+            x,
+            [
+                (-.030*m.scale,sole_y,shoe_width*.72,shoe_height*.70,{ft:1}),
+                (-.002*m.scale,sole_y+.003*m.scale,shoe_width*.88,shoe_height*.94,{ft:1}),
+                (.050*m.scale,sole_y+.006*m.scale,shoe_width*.84,shoe_height*.88,{ft:1}),
+                (.108*m.scale,sole_y+.004*m.scale,shoe_width,shoe_height*.76,{ft:1}),
+                (.152*m.scale,sole_y,shoe_width*.94,shoe_height*.64,{ft:1}),
+            ],
+            segments=32,
+            material_role="shoes",
+        ))
+        parts.append(_ellipsoid(
+            f"heel-{suffix.lower()}",
+            (x,sole_y,-.028*m.scale),
+            (shoe_width*.72,shoe_height*.70,.034*m.scale),
             {ft:1},
             "shoes",
-            lon=30,
-            lat=12,
+            lon=24,
+            lat=10,
+        ))
+        parts.append(_ellipsoid(
+            f"instep-{suffix.lower()}",
+            (x,sole_y+shoe_height*.76,.035*m.scale),
+            (shoe_width*.78,shoe_height*.78,.060*m.scale),
+            {sh:.12,ft:.88},
+            "shoes",
+            lon=28,
+            lat=10,
         ))
         parts.append(_ellipsoid(
             f"toe-{suffix.lower()}",
-            (x,foot_y*.92,.145*m.scale),
-            (.071*m.scale,foot_ry*.84,foot_rz*.55),
+            (x,sole_y-.001*m.scale,.180*m.scale),
+            (shoe_width*.88,shoe_height*.58,.050*m.scale),
             {ft:1},
             "shoes",
-            lon=28,
+            lon=30,
             lat=10,
         ))
         if shoes_choice=="boots":
