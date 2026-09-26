@@ -363,6 +363,66 @@ def _translate_part(
     return result
 
 
+def _hair_shell(
+    name: str,
+    center: tuple[float,float,float],
+    radii: tuple[float,float,float],
+    *,
+    style: str,
+    joint: str = "Head",
+    radial_segments: int = 96,
+    vertical_segments: int = 28,
+) -> dict[str, Any]:
+    """Open scalp/hair shell adapted from Aura's swept-bob construction.
+
+    Unlike the old full ellipsoid cap, this intentionally leaves the face open.
+    """
+    cx,cy,cz=center
+    rx,ry,rz=radii
+    positions=[]
+    triangles=[]
+    weights=[]
+    for j in range(vertical_segments+1):
+        t=j/vertical_segments
+        for i in range(radial_segments):
+            a=math.tau*i/radial_segments
+            front=max(0.0,math.sin(a))
+            if style=="short":
+                end_phi=1.78-.70*front**.42
+            elif style=="swept":
+                end_phi=2.05-.98*front**.38+.16*math.cos(a)*front
+            elif style=="bob":
+                end_phi=2.34-1.30*front**.35+.07*math.cos(a)*front
+            else:  # long
+                end_phi=2.38-1.25*front**.35+.06*math.cos(a)*front
+            phi=.025+(end_phi-.025)*t
+            x=cx+rx*math.sin(phi)*math.cos(a)
+            y=cy+ry*math.cos(phi)
+            z=cz+rz*math.sin(phi)*math.sin(a)
+            # Slight asymmetry keeps the cap from reading as a perfect helmet.
+            if style in ("swept","bob","long") and front>0:
+                x-=.010*rx/radii[0]*front*(1-t)*math.sin(a*.5)
+            positions.append((x,y,z))
+            weights.append({joint:1.0})
+    for j in range(vertical_segments):
+        for i in range(radial_segments):
+            a=j*radial_segments+i
+            b=j*radial_segments+(i+1)%radial_segments
+            c=(j+1)*radial_segments+(i+1)%radial_segments
+            d=(j+1)*radial_segments+i
+            # Match the outward winding used by the ellipsoid helper.
+            if j:
+                triangles.append((a,b,d))
+            triangles.append((b,c,d))
+    return {
+        "id":name,
+        "positions":positions,
+        "triangles":triangles,
+        "weights":_normalize_weights(weights),
+        "material_role":"hair",
+    }
+
+
 def build_parts(controls: dict[str, Any]) -> list[dict[str, Any]]:
     m=body_metrics(controls)
     build=m.build
@@ -494,41 +554,56 @@ def build_parts(controls: dict[str, Any]) -> list[dict[str, Any]]:
 
     hair=controls.get("hair","short")
     if hair != "none":
-        hw=.095*_num(controls.get("head_width"),1.0)*head_scale
-        hh=.112*head_scale
-        hd=.100*_num(controls.get("head_depth"),1.0)*head_scale
-        cy=m.head_y+.045*head_scale
-        parts.append(_ellipsoid(
+        head_width=_num(controls.get("head_width"),1.0)
+        head_depth=_num(controls.get("head_depth"),1.0)
+        hw=.101*head_width*head_scale
+        hh=.138*head_scale
+        hd=.104*head_depth*head_scale
+        cy=m.head_y+.018*head_scale
+        parts.append(_hair_shell(
             "hair-cap",
-            (0,cy,-.010*head_scale),
+            (0,cy,-.006*head_scale),
             (hw,hh,hd),
-            {"Head":1},
-            "hair",
-            lon=40,
-            lat=14,
+            style=hair,
         ))
+
         if hair=="swept":
             parts.append(_ellipsoid(
                 "hair-swept-fringe",
-                (-.028*head_scale,m.head_y+.055*head_scale,.075*head_scale),
-                (.070*head_scale,.042*head_scale,.028*head_scale),
+                (-.032*head_scale,m.head_y+.080*head_scale,.070*head_scale),
+                (.050*head_scale,.022*head_scale,.016*head_scale),
                 {"Head":1},
                 "hair",
-                lon=28,
-                lat=9,
+                lon=30,
+                lat=8,
             ))
+
         if hair in ("bob","long"):
-            side_y=m.head_y-.035*head_scale
-            side_h=.100*head_scale if hair=="bob" else .185*head_scale
+            top_y=m.head_y+.020*head_scale
+            bottom_y=(
+                m.head_y-.105*head_scale
+                if hair=="bob"
+                else m.head_y-.245*head_scale
+            )
+            side_h=(top_y-bottom_y)*.54
+            side_y=(top_y+bottom_y)*.5
             for suffix,sign in (("L",-1),("R",1)):
                 parts.append(_ellipsoid(
                     f"hair-side-{suffix.lower()}",
-                    (sign*.082*head_scale,side_y,.0),
-                    (.022*head_scale,side_h,.055*head_scale),
+                    (
+                        sign*.091*head_width*head_scale,
+                        side_y,
+                        -.022*head_depth*head_scale,
+                    ),
+                    (
+                        .015*head_scale,
+                        side_h,
+                        .030*head_depth*head_scale,
+                    ),
                     {"Head":1},
                     "hair",
-                    lon=22,
-                    lat=10,
+                    lon=26,
+                    lat=12,
                 ))
     return parts
 
