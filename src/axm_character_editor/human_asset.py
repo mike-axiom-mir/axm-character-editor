@@ -524,7 +524,7 @@ def _aura_hair_shell(
             d=(j+1)*radial+i
             triangles.extend(_triangulate_quad(a,b,c,d))
     return {
-        "id":"hair-aura-shell",
+        "id":"hair-cap",
         "positions":positions,
         "triangles":triangles,
         "weights":_normalize_weights(weights),
